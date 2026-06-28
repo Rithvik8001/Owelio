@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { BellIcon, FolderPlusIcon, UsersIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { AppShell } from "@/components/app/app-shell"
 import { GroupAvatar } from "@/components/app/group-avatar"
 import { CreateGroupDialog } from "@/components/app/group-forms"
@@ -48,18 +49,21 @@ export default async function DashboardPage() {
             value={data.totals.groups}
             description="Groups you belong to or manage"
             icon={UsersIcon}
+            iconClass="bg-violet-50 text-violet-500"
           />
           <MetricCard
             title="Memberships"
             value={data.totals.memberships}
             description="Active roles across all groups"
             icon={FolderPlusIcon}
+            iconClass="bg-emerald-50 text-emerald-500"
           />
           <MetricCard
             title="Invitations"
             value={data.totals.pendingInvites}
             description="Waiting for your response"
             icon={BellIcon}
+            iconClass="bg-amber-50 text-amber-500"
           />
         </div>
 
@@ -67,7 +71,7 @@ export default async function DashboardPage() {
         {data.pendingInvites.length ? (
           <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
                 <BellIcon className="size-4" />
               </div>
               <div>
@@ -147,11 +151,13 @@ function MetricCard({
   value,
   description,
   icon: Icon,
+  iconClass,
 }: {
   title: string
   value: number
   description: string
   icon: React.ComponentType<{ className?: string }>
+  iconClass: string
 }) {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-6">
@@ -164,7 +170,7 @@ function MetricCard({
             {value}
           </p>
         </div>
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700">
+        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", iconClass)}>
           <Icon className="size-5" />
         </div>
       </div>

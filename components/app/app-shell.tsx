@@ -36,10 +36,10 @@ type AppShellUser = {
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: HomeIcon },
-  { label: "Groups", href: "/groups", icon: UsersIcon },
-  { label: "Invitations", href: "/invitations", icon: BellIcon },
-  { label: "Settings", href: "/settings", icon: SettingsIcon },
+  { label: "Dashboard", href: "/dashboard", icon: HomeIcon, iconClass: "text-blue-500" },
+  { label: "Groups", href: "/groups", icon: UsersIcon, iconClass: "text-violet-500" },
+  { label: "Invitations", href: "/invitations", icon: BellIcon, iconClass: "text-amber-500" },
+  { label: "Settings", href: "/settings", icon: SettingsIcon, iconClass: "text-teal-500" },
 ]
 
 function initials(username: string) {
@@ -98,7 +98,7 @@ export function AppShell({
                         tooltip={item.label}
                       >
                         <Link href={item.href}>
-                          <Icon />
+                          <Icon className={item.iconClass} />
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>

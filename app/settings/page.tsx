@@ -25,7 +25,7 @@ export default async function SettingsPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
-          <div className="mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700">
+          <div className="mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-500">
             <SettingsIcon className="size-[18px]" />
           </div>
           <p className="mb-2 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">

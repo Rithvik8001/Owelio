@@ -1,17 +1,10 @@
 import type { Metadata } from "next"
-import { Cormorant_Garamond, Geist_Mono, Inter } from "next/font/google"
+import { Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 
-const cormorantGaramond = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-heading",
-})
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
@@ -38,8 +31,6 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(
         "antialiased",
-        inter.variable,
-        cormorantGaramond.variable,
         geistMono.variable,
       )}
     >
