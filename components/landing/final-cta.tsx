@@ -7,7 +7,7 @@ export function FinalCta() {
     <section className="bg-white px-6 py-28">
       <div className="mx-auto max-w-3xl text-center">
         <h2
-          className="mb-5 font-heading font-bold leading-[1.08] tracking-[-0.035em] text-zinc-900"
+          className="mb-5 font-heading leading-[1.08] font-bold tracking-[-0.035em] text-zinc-900"
           style={{ fontSize: "clamp(2rem, 5vw, 3.75rem)" }}
         >
           Ready to stop guessing?

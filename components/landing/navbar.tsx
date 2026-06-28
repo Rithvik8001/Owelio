@@ -25,11 +25,11 @@ export function Navbar() {
         "fixed inset-x-0 top-0 z-50 transition-all duration-300",
         scrolled
           ? "border-b border-zinc-200/60 bg-white/80 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] backdrop-blur-xl"
-          : "bg-transparent",
+          : "bg-transparent"
       )}
     >
-      {/* Grid layout: logo | centered nav | actions */}
-      <nav className="mx-auto grid h-16 max-w-6xl grid-cols-3 items-center px-6">
+      {/* flex on mobile → 3-col grid on desktop */}
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 md:grid md:grid-cols-3">
         {/* Left: logo */}
         <Link
           href="/"
@@ -38,7 +38,7 @@ export function Navbar() {
           Owelio
         </Link>
 
-        {/* Center: nav links */}
+        {/* Center: nav links (desktop only) */}
         <ul className="hidden items-center justify-center gap-0.5 md:flex">
           {navLinks.map(({ label, href }) => (
             <li key={label}>
@@ -57,14 +57,14 @@ export function Navbar() {
           <Button
             asChild
             variant="ghost"
-            className="hidden h-auto px-3.5 py-2 text-sm text-zinc-500 hover:bg-zinc-100/70 hover:text-zinc-900 md:inline-flex"
+            className="h-auto px-3.5 py-2 text-sm text-zinc-500 hover:bg-zinc-100/70 hover:text-zinc-900"
           >
             <Link href="/login">Log in</Link>
           </Button>
 
           <Button
             asChild
-            className="ml-1 h-auto rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            className="ml-1 h-auto bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
           >
             <Link href="/signup">Get started</Link>
           </Button>

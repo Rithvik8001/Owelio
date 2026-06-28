@@ -1,4 +1,12 @@
-import { BarChart3, Sparkles, Zap, Users, Target, RefreshCw, Scale } from "lucide-react"
+import {
+  BarChart3,
+  Sparkles,
+  Zap,
+  Users,
+  Target,
+  RefreshCw,
+  Scale,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function SplitVisual() {
@@ -12,21 +20,25 @@ function SplitVisual() {
     <div className="mt-6 space-y-2.5">
       {bars.map((b) => (
         <div key={b.label} className="flex items-center gap-3">
-          <span className="text-[11px] text-zinc-400 w-10 shrink-0 tabular-nums">{b.label}</span>
-          <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+          <span className="w-10 shrink-0 text-[11px] text-zinc-400 tabular-nums">
+            {b.label}
+          </span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100">
             <div
               className={cn("h-full rounded-full", b.color)}
               style={{ width: `${b.pct}%` }}
             />
           </div>
-          <span className="text-[11px] text-zinc-400 w-7 text-right tabular-nums">{b.pct}%</span>
+          <span className="w-7 text-right text-[11px] text-zinc-400 tabular-nums">
+            {b.pct}%
+          </span>
         </div>
       ))}
-      <div className="pt-2 flex items-center gap-2 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 pt-2">
         {["Equal", "Exact", "Percent", "Shares"].map((mode) => (
           <span
             key={mode}
-            className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500"
+            className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500"
           >
             {mode}
           </span>
@@ -39,15 +51,15 @@ function SplitVisual() {
 function BalanceVisual() {
   return (
     <div className="mt-6 space-y-2">
-      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-emerald-50">
+      <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2">
         <span className="text-xs text-zinc-600">Alex owes you</span>
         <span className="text-xs font-semibold text-emerald-600">+$120.00</span>
       </div>
-      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-rose-50">
+      <div className="flex items-center justify-between rounded-xl bg-rose-50 px-3 py-2">
         <span className="text-xs text-zinc-600">You owe Sarah</span>
         <span className="text-xs font-semibold text-rose-500">−$45.00</span>
       </div>
-      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-zinc-100">
+      <div className="flex items-center justify-between rounded-xl bg-zinc-100 px-3 py-2">
         <span className="text-xs font-medium text-zinc-700">Net balance</span>
         <span className="text-xs font-bold text-zinc-900">+$75.00</span>
       </div>
@@ -60,31 +72,35 @@ function SettlementVisual() {
     <div className="mt-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400 mb-2.5">
+          <p className="mb-2.5 text-[10px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
             Before
           </p>
           <div className="space-y-1.5">
             {["A → B", "A → C", "B → C", "C → D", "D → A"].map((t) => (
               <div key={t} className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 shrink-0" />
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-300" />
                 <span className="text-[11px] text-zinc-400">{t}</span>
               </div>
             ))}
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400 mb-2.5">
+          <p className="mb-2.5 text-[10px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
             After
           </p>
           <div className="space-y-1.5">
             {["A → C", "D → B"].map((t) => (
               <div key={t} className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                <span className="text-[11px] text-zinc-700 font-medium">{t}</span>
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                <span className="text-[11px] font-medium text-zinc-700">
+                  {t}
+                </span>
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-3">3 fewer payments</p>
+          <p className="mt-3 text-[11px] font-semibold text-emerald-600">
+            3 fewer payments
+          </p>
         </div>
       </div>
     </div>
@@ -105,13 +121,13 @@ function GroupsVisual() {
         {avatars.map((a, i) => (
           <div
             key={i}
-            className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold"
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-xs font-bold text-white"
             style={{ backgroundColor: a.bg }}
           >
             {a.initial}
           </div>
         ))}
-        <div className="w-9 h-9 rounded-full border-2 border-white bg-zinc-100 flex items-center justify-center text-zinc-500 text-xs font-medium">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-zinc-100 text-xs font-medium text-zinc-500">
           +4
         </div>
       </div>
@@ -124,28 +140,48 @@ function GroupsVisual() {
 
 function BudgetVisual() {
   const items = [
-    { label: "Dining", pct: 78, color: "bg-amber-400", spent: "$390", total: "$500" },
-    { label: "Transport", pct: 45, color: "bg-violet-400", spent: "$90", total: "$200" },
-    { label: "Activities", pct: 92, color: "bg-rose-400", spent: "$460", total: "$500" },
+    {
+      label: "Dining",
+      pct: 78,
+      color: "bg-amber-400",
+      spent: "$390",
+      total: "$500",
+    },
+    {
+      label: "Transport",
+      pct: 45,
+      color: "bg-violet-400",
+      spent: "$90",
+      total: "$200",
+    },
+    {
+      label: "Activities",
+      pct: 92,
+      color: "bg-rose-400",
+      spent: "$460",
+      total: "$500",
+    },
   ]
   return (
     <div className="mt-6 space-y-3.5">
       {items.map((item) => (
         <div key={item.label}>
-          <div className="flex justify-between items-baseline mb-1.5">
+          <div className="mb-1.5 flex items-baseline justify-between">
             <span className="text-xs text-zinc-600">{item.label}</span>
             <span className="text-[11px] text-zinc-400 tabular-nums">
               {item.spent} / {item.total}
             </span>
           </div>
-          <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
             <div
               className={cn("h-full rounded-full transition-all", item.color)}
               style={{ width: `${item.pct}%` }}
             />
           </div>
           {item.pct >= 90 && (
-            <p className="text-[10px] text-rose-500 font-medium mt-1">Near limit</p>
+            <p className="mt-1 text-[10px] font-medium text-rose-500">
+              Near limit
+            </p>
           )}
         </div>
       ))}
@@ -156,9 +192,11 @@ function BudgetVisual() {
 function ReceiptVisual() {
   return (
     <div className="mt-6">
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-[11px] font-semibold text-zinc-700">BOCA Restaurant</span>
+      <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-zinc-700">
+            BOCA Restaurant
+          </span>
           <span className="text-[11px] text-zinc-400">Jun 24</span>
         </div>
         {[
@@ -166,21 +204,28 @@ function ReceiptVisual() {
           { item: "Burrata", amount: "$18" },
           { item: "Wine ×2", amount: "$54" },
         ].map((row) => (
-          <div key={row.item} className="flex justify-between items-center py-1 px-2 rounded-lg bg-violet-50/60 ring-1 ring-violet-200/40">
+          <div
+            key={row.item}
+            className="flex items-center justify-between rounded-lg bg-violet-50/60 px-2 py-1 ring-1 ring-violet-200/40"
+          >
             <span className="text-[11px] text-zinc-600">{row.item}</span>
-            <span className="text-[11px] font-medium text-zinc-700">{row.amount}</span>
+            <span className="text-[11px] font-medium text-zinc-700">
+              {row.amount}
+            </span>
           </div>
         ))}
-        <div className="flex justify-between items-center pt-1">
+        <div className="flex items-center justify-between pt-1">
           <span className="text-[11px] font-bold text-zinc-700">Total</span>
           <span className="text-[11px] font-bold text-zinc-900">$240.00</span>
         </div>
       </div>
       <div className="mt-2 flex items-center gap-1.5">
-        <div className="w-4 h-4 rounded-full bg-violet-100 flex items-center justify-center">
+        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-violet-100">
           <Sparkles size={9} className="text-violet-600" />
         </div>
-        <span className="text-[11px] text-zinc-500">AI extracted · Review before saving</span>
+        <span className="text-[11px] text-zinc-500">
+          AI extracted · Review before saving
+        </span>
       </div>
     </div>
   )
@@ -196,13 +241,15 @@ function RecurringVisual() {
       ].map((item) => (
         <div
           key={item.name}
-          className="flex items-center justify-between py-2 px-3 rounded-xl bg-zinc-50"
+          className="flex items-center justify-between rounded-xl bg-zinc-50 px-3 py-2"
         >
           <div>
             <p className="text-xs font-medium text-zinc-800">{item.name}</p>
             <p className="text-[10px] text-zinc-400">{item.cycle}</p>
           </div>
-          <span className="text-xs font-semibold text-zinc-700">{item.amount}</span>
+          <span className="text-xs font-semibold text-zinc-700">
+            {item.amount}
+          </span>
         </div>
       ))}
     </div>
@@ -231,21 +278,23 @@ function FeatureCard({
   return (
     <div
       className={cn(
-        "rounded-2xl bg-white border border-zinc-200/80 p-6 flex flex-col overflow-hidden",
-        className,
+        "flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6",
+        className
       )}
     >
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center mb-4 shrink-0"
+        className="mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
         style={{ backgroundColor: accent + "18", color: accent }}
       >
         <Icon size={18} />
       </div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 mb-2">{tag}</p>
-      <h3 className="font-heading font-semibold text-zinc-900 text-[1.05rem] leading-snug mb-2">
+      <p className="mb-2 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+        {tag}
+      </p>
+      <h3 className="mb-2 font-heading text-[1.05rem] leading-snug font-semibold text-zinc-900">
         {title}
       </h3>
-      <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
+      <p className="text-sm leading-relaxed text-zinc-500">{description}</p>
       {children && <div className="mt-auto">{children}</div>}
     </div>
   )
@@ -253,27 +302,27 @@ function FeatureCard({
 
 export function FeaturesGrid() {
   return (
-    <section id="features" className="py-28 px-6 bg-zinc-50/60">
-      <div className="max-w-6xl mx-auto">
+    <section id="features" className="bg-zinc-50/60 px-6 py-28">
+      <div className="mx-auto max-w-6xl">
         {/* Section header */}
-        <div className="max-w-xl mb-14">
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-violet-600 mb-3">
+        <div className="mb-14 max-w-xl">
+          <p className="mb-3 text-xs font-bold tracking-[0.1em] text-violet-600 uppercase">
             Features
           </p>
           <h2
-            className="font-heading font-bold tracking-[-0.03em] text-zinc-900 leading-tight mb-4"
+            className="mb-4 font-heading leading-tight font-bold tracking-[-0.03em] text-zinc-900"
             style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}
           >
             Everything you need to track shared money.
           </h2>
-          <p className="text-zinc-500 text-base leading-relaxed">
+          <p className="text-base leading-relaxed text-zinc-500">
             From splitting a dinner to managing a group trip budget — Owelio
             handles it all with precision.
           </p>
         </div>
 
         {/* Bento grid — 3 cols on lg */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Row 1 */}
           <FeatureCard
             icon={Scale}

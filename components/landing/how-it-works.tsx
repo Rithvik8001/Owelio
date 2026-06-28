@@ -9,25 +9,30 @@ function CreateGroupVisual() {
   ]
   return (
     <div className="mt-6 space-y-2">
-      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-zinc-50 border border-zinc-200 mb-3">
-        <span className="text-xs font-semibold text-zinc-700">Lisbon Trip 🇵🇹</span>
+      <div className="mb-3 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+        <span className="text-xs font-semibold text-zinc-700">
+          Lisbon Trip 🇵🇹
+        </span>
         <span className="text-[10px] text-zinc-400">5 members</span>
       </div>
       {invites.map((inv) => (
-        <div key={inv.email} className="flex items-center justify-between py-1.5 px-2">
+        <div
+          key={inv.email}
+          className="flex items-center justify-between px-2 py-1.5"
+        >
           <div className="flex items-center gap-2">
             <div
-              className="w-5 h-5 rounded-full flex-shrink-0"
+              className="h-5 w-5 flex-shrink-0 rounded-full"
               style={{ backgroundColor: inv.color }}
             />
             <span className="text-[11px] text-zinc-600">{inv.email}</span>
           </div>
           <span
             className={cn(
-              "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold",
               inv.status === "accepted"
                 ? "bg-emerald-50 text-emerald-600"
-                : "bg-zinc-100 text-zinc-400",
+                : "bg-zinc-100 text-zinc-400"
             )}
           >
             {inv.status === "accepted" ? "Joined" : "Pending"}
@@ -41,33 +46,39 @@ function CreateGroupVisual() {
 function LogExpenseVisual() {
   return (
     <div className="mt-6 space-y-2.5">
-      <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-3 space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-xs font-semibold text-zinc-800">Dinner at BOCA</span>
+      <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-zinc-800">
+            Dinner at BOCA
+          </span>
           <span className="text-xs font-bold text-zinc-900">$240</span>
         </div>
         <div className="flex gap-1.5">
-          {["Equal", "Exact", "%" , "Shares"].map((m, i) => (
+          {["Equal", "Exact", "%", "Shares"].map((m, i) => (
             <span
               key={m}
               className={cn(
-                "text-[10px] font-medium px-2 py-0.5 rounded-full",
+                "rounded-full px-2 py-0.5 text-[10px] font-medium",
                 i === 0
                   ? "bg-violet-100 text-violet-700 ring-1 ring-violet-300/60"
-                  : "bg-zinc-100 text-zinc-500",
+                  : "bg-zinc-100 text-zinc-500"
               )}
             >
               {m}
             </span>
           ))}
         </div>
-        <div className="text-[11px] text-zinc-500 pt-0.5">4 people · $60 each</div>
+        <div className="pt-0.5 text-[11px] text-zinc-500">
+          4 people · $60 each
+        </div>
       </div>
       <div className="flex items-center gap-1.5">
-        <div className="w-4 h-4 rounded-full bg-violet-100 flex items-center justify-center">
+        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-violet-100">
           <Receipt size={9} className="text-violet-600" />
         </div>
-        <span className="text-[11px] text-zinc-500">Or scan a receipt with AI</span>
+        <span className="text-[11px] text-zinc-500">
+          Or scan a receipt with AI
+        </span>
       </div>
     </div>
   )
@@ -77,17 +88,45 @@ function TrackLedgerVisual() {
   return (
     <div className="mt-6 space-y-2">
       {[
-        { name: "Alex M.", amount: "+$120.00", dir: "up", color: "text-emerald-600", bg: "bg-emerald-50" },
-        { name: "Sarah K.", amount: "−$45.00", dir: "down", color: "text-rose-500", bg: "bg-rose-50" },
-        { name: "Dev P.", amount: "+$60.00", dir: "up", color: "text-emerald-600", bg: "bg-emerald-50" },
+        {
+          name: "Alex M.",
+          amount: "+$120.00",
+          dir: "up",
+          color: "text-emerald-600",
+          bg: "bg-emerald-50",
+        },
+        {
+          name: "Sarah K.",
+          amount: "−$45.00",
+          dir: "down",
+          color: "text-rose-500",
+          bg: "bg-rose-50",
+        },
+        {
+          name: "Dev P.",
+          amount: "+$60.00",
+          dir: "up",
+          color: "text-emerald-600",
+          bg: "bg-emerald-50",
+        },
       ].map((row) => (
-        <div key={row.name} className={cn("flex items-center justify-between py-2 px-3 rounded-xl", row.bg)}>
+        <div
+          key={row.name}
+          className={cn(
+            "flex items-center justify-between rounded-xl px-3 py-2",
+            row.bg
+          )}
+        >
           <span className="text-xs text-zinc-600">{row.name}</span>
-          <span className={cn("text-xs font-semibold tabular-nums", row.color)}>{row.amount}</span>
+          <span className={cn("text-xs font-semibold tabular-nums", row.color)}>
+            {row.amount}
+          </span>
         </div>
       ))}
-      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-zinc-100 mt-1">
-        <span className="text-xs font-medium text-zinc-700">Your net balance</span>
+      <div className="mt-1 flex items-center justify-between rounded-xl bg-zinc-100 px-3 py-2">
+        <span className="text-xs font-medium text-zinc-700">
+          Your net balance
+        </span>
         <span className="text-xs font-bold text-zinc-900">+$135.00</span>
       </div>
     </div>
@@ -97,7 +136,7 @@ function TrackLedgerVisual() {
 function SettleVisual() {
   return (
     <div className="mt-6 space-y-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">
+      <p className="text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
         Suggested payments
       </p>
       {[
@@ -106,7 +145,7 @@ function SettleVisual() {
       ].map((s) => (
         <div
           key={`${s.from}-${s.to}`}
-          className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-white border border-zinc-200"
+          className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5"
         >
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-zinc-700">{s.from}</span>
@@ -114,14 +153,18 @@ function SettleVisual() {
             <span className="text-xs font-medium text-zinc-700">{s.to}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-900 tabular-nums">{s.amount}</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+            <span className="text-xs font-semibold text-zinc-900 tabular-nums">
+              {s.amount}
+            </span>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
               Confirm
             </span>
           </div>
         </div>
       ))}
-      <p className="text-[11px] text-emerald-600 font-medium">3 fewer transfers than manual</p>
+      <p className="text-[11px] font-medium text-emerald-600">
+        3 fewer transfers than manual
+      </p>
     </div>
   )
 }
@@ -136,33 +179,46 @@ interface StepCardProps {
   className?: string
 }
 
-function StepCard({ number, icon: Icon, title, description, accent, children, className }: StepCardProps) {
+function StepCard({
+  number,
+  icon: Icon,
+  title,
+  description,
+  accent,
+  children,
+  className,
+}: StepCardProps) {
   return (
-    <div className={cn("rounded-2xl bg-white border border-zinc-200/80 p-6 flex flex-col overflow-hidden", className)}>
-      <div className="flex items-start justify-between mb-4">
+    <div
+      className={cn(
+        "flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6",
+        className
+      )}
+    >
+      <div className="mb-4 flex items-start justify-between">
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
           style={{ backgroundColor: accent + "18", color: accent }}
         >
           <Icon size={18} />
         </div>
         <span
-          className="font-heading font-bold text-[2.25rem] leading-none tracking-[-0.04em] select-none"
+          className="font-heading text-[2.25rem] leading-none font-bold tracking-[-0.04em] select-none"
           style={{ color: accent + "20" }}
         >
           {number}
         </span>
       </div>
       <p
-        className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
+        className="mb-2 text-[10px] font-bold tracking-[0.1em] uppercase"
         style={{ color: accent }}
       >
         Step {number}
       </p>
-      <h3 className="font-heading font-semibold text-zinc-900 text-[1.05rem] leading-snug mb-2">
+      <h3 className="mb-2 font-heading text-[1.05rem] leading-snug font-semibold text-zinc-900">
         {title}
       </h3>
-      <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
+      <p className="text-sm leading-relaxed text-zinc-500">{description}</p>
       {children && <div className="mt-auto">{children}</div>}
     </div>
   )
@@ -170,27 +226,27 @@ function StepCard({ number, icon: Icon, title, description, accent, children, cl
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-28 px-6 bg-white">
-      <div className="max-w-6xl mx-auto">
+    <section id="how-it-works" className="bg-white px-6 py-28">
+      <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="max-w-xl mb-14">
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-violet-600 mb-3">
+        <div className="mb-14 max-w-xl">
+          <p className="mb-3 text-xs font-bold tracking-[0.1em] text-violet-600 uppercase">
             How it works
           </p>
           <h2
-            className="font-heading font-bold tracking-[-0.03em] text-zinc-900 leading-tight mb-4"
+            className="mb-4 font-heading leading-tight font-bold tracking-[-0.03em] text-zinc-900"
             style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}
           >
             Four steps. No confusion.
           </h2>
-          <p className="text-zinc-500 text-base leading-relaxed">
+          <p className="text-base leading-relaxed text-zinc-500">
             Owelio is designed to get out of your way. The happy path is short;
             the power is there when you need it.
           </p>
         </div>
 
         {/* Bento grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Row 1 */}
           <StepCard
             number="01"
