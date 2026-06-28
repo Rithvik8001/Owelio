@@ -2,14 +2,18 @@
 
 import Link from "next/link"
 import { useActionState } from "react"
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { signup } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 
-export default function SignupPage() {
+function SignupForm() {
   const [state, action, pending] = useActionState(signup, undefined)
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("next") ?? "/dashboard"
 
   return (
     <div className="w-full max-w-sm">
@@ -30,6 +34,8 @@ export default function SignupPage() {
         )}
 
         <form action={action} className="space-y-4">
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+
           <div className="space-y-1.5">
             <Label htmlFor="username">Username</Label>
             <Input
@@ -106,5 +112,13 @@ export default function SignupPage() {
         </Link>
       </p>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   )
 }

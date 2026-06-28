@@ -14,6 +14,7 @@ function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined)
   const searchParams = useSearchParams()
   const confirmed = searchParams.get("confirmed")
+  const redirectTo = searchParams.get("next") ?? "/dashboard"
 
   return (
     <div className="w-full max-w-sm">
@@ -40,6 +41,8 @@ function LoginForm() {
         )}
 
         <form action={action} className="space-y-4">
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input

@@ -182,7 +182,7 @@ export function AiSection() {
             Intelligent by design.
           </h2>
           <p className="text-base leading-relaxed text-zinc-500">
-            Owelio's AI layer works silently in the background — categorizing
+            Owelio&apos;s AI layer works silently in the background — categorizing
             expenses, reading receipts, and synthesizing spending patterns into
             clear, actionable insights.
           </p>

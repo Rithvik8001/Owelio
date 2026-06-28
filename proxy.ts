@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextRequest, NextResponse } from "next/server"
 
-const protectedRoutes = ["/dashboard"]
+const protectedRoutes = ["/dashboard", "/groups", "/invitations", "/settings"]
 const authRoutes = ["/login", "/signup"]
 
 export async function proxy(request: NextRequest) {
@@ -35,11 +35,14 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.includes(pathname)
 
   if (isProtected && !user) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    const loginUrl = new URL("/login", request.url)
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`)
+    return NextResponse.redirect(loginUrl)
   }
 
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    const next = request.nextUrl.searchParams.get("next")
+    return NextResponse.redirect(new URL(getSafeRedirect(next), request.url))
   }
 
   return response
@@ -47,4 +50,12 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+}
+
+function getSafeRedirect(next: string | null) {
+  if (next?.startsWith("/") && !next.startsWith("//")) {
+    return next
+  }
+
+  return "/dashboard"
 }

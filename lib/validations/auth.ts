@@ -3,6 +3,12 @@ import { z } from "zod"
 export const LoginSchema = z.object({
   email: z.email("Enter a valid email.").trim().toLowerCase(),
   password: z.string().min(1, "Password is required."),
+  redirectTo: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard"
+    ),
 })
 
 export const SignupSchema = z.object({
@@ -18,6 +24,12 @@ export const SignupSchema = z.object({
     .min(8, "Must be at least 8 characters.")
     .regex(/[a-zA-Z]/, "Must contain at least one letter.")
     .regex(/[0-9]/, "Must contain at least one number."),
+  redirectTo: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard"
+    ),
 })
 
 export type AuthFormState =
