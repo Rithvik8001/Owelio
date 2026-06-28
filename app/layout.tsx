@@ -1,11 +1,16 @@
 import type { Metadata } from "next"
-import { Geist_Mono, Inter, Space_Grotesk } from "next/font/google"
+import { Cormorant_Garamond, Geist_Mono, Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-heading" })
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-heading",
+})
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
@@ -34,7 +39,7 @@ export default function RootLayout({
       className={cn(
         "antialiased",
         inter.variable,
-        spaceGrotesk.variable,
+        cormorantGaramond.variable,
         geistMono.variable,
       )}
     >

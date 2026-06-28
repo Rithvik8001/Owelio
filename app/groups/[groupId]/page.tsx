@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { format } from "date-fns"
 import { InboxIcon, UsersIcon } from "lucide-react"
 import { AppShell } from "@/components/app/app-shell"
+import { GroupAvatar } from "@/components/app/group-avatar"
 import {
   InviteMemberDialog,
   LeaveGroupButton,
@@ -60,16 +61,21 @@ export default async function GroupDetailPage({
     <AppShell user={detail.currentUser} pendingInvites={pendingForUser.length}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm text-zinc-500">Group</p>
-            <h1 className="truncate font-heading text-3xl font-semibold tracking-tight text-zinc-900">
-              {detail.group.name}
-            </h1>
-            {detail.group.description ? (
-              <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-                {detail.group.description}
+          <div className="flex min-w-0 items-start gap-4">
+            <GroupAvatar name={detail.group.name} size="lg" />
+            <div className="min-w-0">
+              <p className="mb-0.5 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                Group
               </p>
-            ) : null}
+              <h1 className="truncate font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
+                {detail.group.name}
+              </h1>
+              {detail.group.description ? (
+                <p className="mt-1.5 max-w-2xl text-sm text-zinc-500">
+                  {detail.group.description}
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <RoleBadge role={detail.currentMembership.role} />
@@ -251,13 +257,19 @@ function SummaryCard({
   text?: boolean
 }) {
   return (
-    <Card className="rounded-2xl border border-zinc-200/80 bg-white">
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className={text ? "truncate text-xl" : "text-3xl"}>
-          {value}
-        </CardTitle>
-      </CardHeader>
-    </Card>
+    <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+      <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+        {label}
+      </p>
+      <p
+        className={
+          text
+            ? "font-heading text-xl font-bold tracking-tight text-zinc-900 truncate"
+            : "font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900"
+        }
+      >
+        {value}
+      </p>
+    </div>
   )
 }
