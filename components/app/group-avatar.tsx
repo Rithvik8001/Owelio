@@ -18,7 +18,8 @@ function hashName(name: string): number {
 }
 
 export function groupColor(name: string): string {
-  const [light, dark] = AVATAR_GRADIENTS[hashName(name) % AVATAR_GRADIENTS.length]
+  const [light, dark] =
+    AVATAR_GRADIENTS[hashName(name) % AVATAR_GRADIENTS.length]
   return `linear-gradient(135deg, ${light} 0%, ${dark} 100%)`
 }
 

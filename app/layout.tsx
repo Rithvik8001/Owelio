@@ -6,13 +6,18 @@ import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata: Metadata = {
   title: "Owelio — The honest way to split expenses",
   description:
     "Track group costs with precision, minimize payments needed to settle, and keep money out of the way of friendship.",
-  keywords: ["expense splitting", "group expenses", "split bills", "shared costs"],
+  keywords: [
+    "expense splitting",
+    "group expenses",
+    "split bills",
+    "shared costs",
+  ],
   openGraph: {
     title: "Owelio — The honest way to split expenses",
     description:
@@ -30,11 +35,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        "antialiased",
-        inter.variable,
-        geistMono.variable,
-      )}
+      className={cn("antialiased", inter.variable, geistMono.variable)}
     >
       <body>
         <ThemeProvider>

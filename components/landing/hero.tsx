@@ -129,7 +129,7 @@ export function Hero() {
 
       <div className="mx-auto w-full max-w-4xl text-center">
         {/* Label pill */}
-        <div className="mb-7 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-zinc-500 uppercase shadow-sm">
+        <div className="mb-7 inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-300 bg-white px-3 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-zinc-500 uppercase">
           <Sparkles size={10} className="text-violet-500" />
           Expense splitting, reimagined
         </div>

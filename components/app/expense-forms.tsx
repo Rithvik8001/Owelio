@@ -240,7 +240,9 @@ function ExpenseDialog({
   const formRef = useRef<HTMLFormElement>(null)
 
   const defaultSplits = useMemo(() => {
-    const existing = new Map(expense?.splits.map((split) => [split.memberId, split]))
+    const existing = new Map(
+      expense?.splits.map((split) => [split.memberId, split])
+    )
     return members.map((member) => {
       const split = existing.get(member.id)
       return {
@@ -320,7 +322,10 @@ function ExpenseDialog({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Field data-invalid={Boolean(state?.errors?.category)}>
                 <FieldLabel>Category</FieldLabel>
-                <Select name="category" defaultValue={expense?.category ?? "other"}>
+                <Select
+                  name="category"
+                  defaultValue={expense?.category ?? "other"}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -405,11 +410,17 @@ function ExpenseDialog({
               <FieldError>{state?.errors?.splitMethod?.[0]}</FieldError>
             </Field>
 
-            <Field data-invalid={Boolean(state?.errors?.participantIds || state?.errors?.splits)}>
+            <Field
+              data-invalid={Boolean(
+                state?.errors?.participantIds || state?.errors?.splits
+              )}
+            >
               <FieldLabel>Participants</FieldLabel>
               <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200/80 p-3">
                 {members.map((member) => {
-                  const split = defaultSplits.find((item) => item.memberId === member.id)
+                  const split = defaultSplits.find(
+                    (item) => item.memberId === member.id
+                  )
                   return (
                     <label
                       key={member.id}
@@ -448,7 +459,8 @@ function ExpenseDialog({
                 100%.
               </FieldDescription>
               <FieldError>
-                {state?.errors?.participantIds?.[0] ?? state?.errors?.splits?.[0]}
+                {state?.errors?.participantIds?.[0] ??
+                  state?.errors?.splits?.[0]}
               </FieldError>
             </Field>
 
@@ -492,7 +504,11 @@ export function ExpenseActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <EditExpenseDialog groupId={groupId} members={members} expense={expense} />
+        <EditExpenseDialog
+          groupId={groupId}
+          members={members}
+          expense={expense}
+        />
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <DropdownMenuItem
@@ -557,7 +573,10 @@ export function RecordSettlementDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={defaultAmount ? "outline" : "default"} className={defaultAmount ? "" : "bg-zinc-900 hover:bg-zinc-700"}>
+        <Button
+          variant={defaultAmount ? "outline" : "default"}
+          className={defaultAmount ? "" : "bg-zinc-900 hover:bg-zinc-700"}
+        >
           <CalendarIcon data-icon="inline-start" />
           Record payment
         </Button>

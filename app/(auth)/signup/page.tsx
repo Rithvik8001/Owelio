@@ -95,7 +95,11 @@ function SignupForm() {
             )}
           </div>
 
-          <Button type="submit" className="h-10 w-full bg-zinc-900 hover:bg-zinc-700" disabled={pending}>
+          <Button
+            type="submit"
+            className="h-10 w-full bg-zinc-900 hover:bg-zinc-700"
+            disabled={pending}
+          >
             {pending ? <Spinner className="mr-2 h-4 w-4" /> : null}
             Create account
           </Button>

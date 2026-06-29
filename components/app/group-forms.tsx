@@ -224,7 +224,7 @@ export function InviteMemberDialog({ groupId }: { groupId: string }) {
         {state?.inviteUrl ? (
           <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-3">
             <div className="text-xs font-medium text-zinc-500">Invite link</div>
-            <div className="break-all text-sm text-zinc-900">
+            <div className="text-sm break-all text-zinc-900">
               {state.inviteUrl}
             </div>
             <Button type="button" variant="outline" onClick={copyInvite}>
@@ -375,7 +375,10 @@ export function MemberActions({
               <form action={transferOwnership}>
                 <input type="hidden" name="groupId" value={groupId} />
                 <input type="hidden" name="targetMemberId" value={memberId} />
-                <button type="submit" className="flex w-full items-center gap-2">
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2"
+                >
                   <UserRoundCheckIcon />
                   Transfer ownership
                 </button>
@@ -389,7 +392,10 @@ export function MemberActions({
                 <input type="hidden" name="groupId" value={groupId} />
                 <input type="hidden" name="memberId" value={memberId} />
                 <input type="hidden" name="role" value="admin" />
-                <button type="submit" className="flex w-full items-center gap-2">
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2"
+                >
                   Make admin
                 </button>
               </form>
@@ -402,7 +408,10 @@ export function MemberActions({
                 <input type="hidden" name="groupId" value={groupId} />
                 <input type="hidden" name="memberId" value={memberId} />
                 <input type="hidden" name="role" value="member" />
-                <button type="submit" className="flex w-full items-center gap-2">
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2"
+                >
                   Make member
                 </button>
               </form>
