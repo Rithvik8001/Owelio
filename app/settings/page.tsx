@@ -31,12 +31,12 @@ export default async function SettingsPage() {
           <p className="mb-2 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
             Coming soon
           </p>
-          <h3 className="mb-2 font-heading text-[1.05rem] font-semibold leading-snug text-zinc-900">
+          <h3 className="mb-2 font-heading text-[1.05rem] leading-snug font-semibold text-zinc-900">
             Settings are coming next
           </h3>
           <p className="text-sm leading-relaxed text-zinc-500">
-            Groups are the current production focus. Account preferences, profile
-            editing, and notification controls will live here.
+            Groups are the current production focus. Account preferences,
+            profile editing, and notification controls will live here.
           </p>
         </div>
       </div>

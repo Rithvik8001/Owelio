@@ -1,5 +1,10 @@
 import Link from "next/link"
-import { BellIcon, FolderPlusIcon, UsersIcon } from "lucide-react"
+import {
+  BellIcon,
+  CircleDollarSignIcon,
+  ReceiptTextIcon,
+  UsersIcon,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AppShell } from "@/components/app/app-shell"
 import { GroupAvatar } from "@/components/app/group-avatar"
@@ -14,10 +19,14 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Button } from "@/components/ui/button"
+import { formatMoney, getDashboardExpenseData } from "@/lib/expenses"
 import { getDashboardData } from "@/lib/groups"
 
 export default async function DashboardPage() {
-  const data = await getDashboardData()
+  const [data, expenseData] = await Promise.all([
+    getDashboardData(),
+    getDashboardExpenseData(),
+  ])
 
   if (!data) {
     return null
@@ -45,18 +54,24 @@ export default async function DashboardPage() {
         {/* Metric cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <MetricCard
+            title="Net balance"
+            value={formatMoney(expenseData?.totalNetCents ?? 0)}
+            description={
+              (expenseData?.totalNetCents ?? 0) > 0
+                ? "You are owed across groups"
+                : (expenseData?.totalNetCents ?? 0) < 0
+                  ? "You owe across groups"
+                  : "You are settled across groups"
+            }
+            icon={CircleDollarSignIcon}
+            iconClass="bg-emerald-50 text-emerald-500"
+          />
+          <MetricCard
             title="Active groups"
             value={data.totals.groups}
             description="Groups you belong to or manage"
             icon={UsersIcon}
             iconClass="bg-violet-50 text-violet-500"
-          />
-          <MetricCard
-            title="Memberships"
-            value={data.totals.memberships}
-            description="Active roles across all groups"
-            icon={FolderPlusIcon}
-            iconClass="bg-emerald-50 text-emerald-500"
           />
           <MetricCard
             title="Invitations"
@@ -90,6 +105,51 @@ export default async function DashboardPage() {
           </div>
         ) : null}
 
+        {expenseData?.recentExpenses.length ? (
+          <section className="flex flex-col gap-4">
+            <div>
+              <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                Expenses
+              </p>
+              <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
+                Recent expenses
+              </h2>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                Latest costs across your groups.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+              <div className="flex flex-col divide-y divide-zinc-100">
+                {expenseData.recentExpenses.map((expense) => (
+                  <Link
+                    key={expense.id}
+                    href={`/groups/${expense.groupId}`}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                        <ReceiptTextIcon className="size-4 text-zinc-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-zinc-900">
+                          {expense.title}
+                        </p>
+                        <p className="truncate text-xs text-zinc-500">
+                          {expense.group.name} · paid by @
+                          {expense.paidByMember.user.username}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold text-zinc-900">
+                      {formatMoney(expense.amountCents, expense.currencyCode)}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {/* Recent groups */}
         <section className="flex flex-col gap-4">
           <div className="flex items-end justify-between gap-3">
@@ -121,6 +181,12 @@ export default async function DashboardPage() {
                   description={group.description ?? null}
                   memberCount={memberCount}
                   role={membership.role}
+                  netCents={
+                    expenseData?.groupSummaries.find(
+                      (summary) => summary.group.id === group.id
+                    )?.netCents ?? 0
+                  }
+                  currencyCode={group.currencyCode}
                 />
               ))}
             </div>
@@ -154,7 +220,7 @@ function MetricCard({
   iconClass,
 }: {
   title: string
-  value: number
+  value: number | string
   description: string
   icon: React.ComponentType<{ className?: string }>
   iconClass: string
@@ -185,12 +251,16 @@ function GroupCard({
   description,
   memberCount,
   role,
+  netCents,
+  currencyCode,
 }: {
   id: string
   name: string
   description: string | null
   memberCount: number
   role: "owner" | "admin" | "member"
+  netCents: number
+  currencyCode: string
 }) {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-6 transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.08)]">
@@ -215,6 +285,14 @@ function GroupCard({
       ) : (
         <p className="text-sm text-zinc-400">No description yet.</p>
       )}
+      <div className="rounded-xl bg-zinc-50 p-3">
+        <p className="text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+          Your balance
+        </p>
+        <p className="mt-1 text-sm font-semibold text-zinc-900">
+          {formatMoney(netCents, currencyCode)}
+        </p>
+      </div>
       <Button asChild variant="outline" className="w-full">
         <Link href={`/groups/${id}`}>Open group</Link>
       </Button>

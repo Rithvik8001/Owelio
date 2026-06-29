@@ -3,12 +3,7 @@
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { and, eq } from "drizzle-orm"
-import {
-  groupInvitations,
-  groupMembers,
-  groups,
-  profiles,
-} from "@/db/schema"
+import { groupInvitations, groupMembers, groups, profiles } from "@/db/schema"
 import { getDb } from "@/lib/db"
 import {
   createInvitationToken,
@@ -309,7 +304,10 @@ export async function removeMember(formData: FormData) {
   const db = getDb()
 
   const target = await db.query.groupMembers.findFirst({
-    where: and(eq(groupMembers.id, memberId), eq(groupMembers.groupId, groupId)),
+    where: and(
+      eq(groupMembers.id, memberId),
+      eq(groupMembers.groupId, groupId)
+    ),
   })
   if (!target || target.status !== "active" || target.role === "owner") {
     return

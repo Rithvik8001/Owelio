@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm"
 import {
+  integer,
   index,
   pgEnum,
   pgTable,
@@ -28,6 +29,25 @@ export const invitationStatusEnum = pgEnum("invitation_status", [
   "revoked",
   "expired",
 ])
+export const expenseCategoryEnum = pgEnum("expense_category", [
+  "dining",
+  "groceries",
+  "transportation",
+  "lodging",
+  "utilities",
+  "entertainment",
+  "shopping",
+  "health",
+  "education",
+  "services",
+  "travel",
+  "other",
+])
+export const expenseSplitMethodEnum = pgEnum("expense_split_method", [
+  "equal",
+  "exact",
+  "percentage",
+])
 
 export const groups = pgTable(
   "groups",
@@ -41,6 +61,7 @@ export const groups = pgTable(
     createdById: uuid("created_by_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "restrict" }),
+    currencyCode: text("currency_code").notNull().default("USD"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     archivedAt: timestamp("archived_at"),
@@ -48,6 +69,101 @@ export const groups = pgTable(
   (table) => [
     index("groups_owner_id_idx").on(table.ownerId),
     index("groups_created_by_id_idx").on(table.createdById),
+  ]
+)
+
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    category: expenseCategoryEnum("category").notNull().default("other"),
+    amountCents: integer("amount_cents").notNull(),
+    currencyCode: text("currency_code").notNull(),
+    paidByMemberId: uuid("paid_by_member_id")
+      .notNull()
+      .references(() => groupMembers.id, { onDelete: "restrict" }),
+    createdById: uuid("created_by_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    expenseDate: timestamp("expense_date").notNull(),
+    splitMethod: expenseSplitMethodEnum("split_method").notNull(),
+    deletedAt: timestamp("deleted_at"),
+    deletedById: uuid("deleted_by_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("expenses_group_date_idx").on(table.groupId, table.expenseDate),
+    index("expenses_group_deleted_idx").on(table.groupId, table.deletedAt),
+    index("expenses_paid_by_member_idx").on(table.paidByMemberId),
+    index("expenses_created_by_idx").on(table.createdById),
+  ]
+)
+
+export const expenseSplits = pgTable(
+  "expense_splits",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    expenseId: uuid("expense_id")
+      .notNull()
+      .references(() => expenses.id, { onDelete: "cascade" }),
+    groupMemberId: uuid("group_member_id")
+      .notNull()
+      .references(() => groupMembers.id, { onDelete: "restrict" }),
+    owedCents: integer("owed_cents").notNull(),
+    percentageBasisPoints: integer("percentage_basis_points"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("expense_splits_expense_member_unique").on(
+      table.expenseId,
+      table.groupMemberId
+    ),
+    index("expense_splits_member_idx").on(table.groupMemberId),
+  ]
+)
+
+export const settlements = pgTable(
+  "settlements",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    fromMemberId: uuid("from_member_id")
+      .notNull()
+      .references(() => groupMembers.id, { onDelete: "restrict" }),
+    toMemberId: uuid("to_member_id")
+      .notNull()
+      .references(() => groupMembers.id, { onDelete: "restrict" }),
+    amountCents: integer("amount_cents").notNull(),
+    currencyCode: text("currency_code").notNull(),
+    note: text("note"),
+    settledDate: timestamp("settled_date").notNull(),
+    createdById: uuid("created_by_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    deletedAt: timestamp("deleted_at"),
+    deletedById: uuid("deleted_by_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("settlements_group_date_idx").on(table.groupId, table.settledDate),
+    index("settlements_group_deleted_idx").on(table.groupId, table.deletedAt),
+    index("settlements_from_member_idx").on(table.fromMemberId),
+    index("settlements_to_member_idx").on(table.toMemberId),
+    index("settlements_created_by_idx").on(table.createdById),
   ]
 )
 
@@ -121,6 +237,8 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   memberships: many(groupMembers),
   sentInvitations: many(groupInvitations, { relationName: "inviter" }),
   acceptedInvitations: many(groupInvitations, { relationName: "acceptedBy" }),
+  createdExpenses: many(expenses),
+  createdSettlements: many(settlements),
 }))
 
 export const groupsRelations = relations(groups, ({ one, many }) => ({
@@ -136,9 +254,11 @@ export const groupsRelations = relations(groups, ({ one, many }) => ({
   }),
   members: many(groupMembers),
   invitations: many(groupInvitations),
+  expenses: many(expenses),
+  settlements: many(settlements),
 }))
 
-export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
+export const groupMembersRelations = relations(groupMembers, ({ one, many }) => ({
   group: one(groups, {
     fields: [groupMembers.groupId],
     references: [groups.id],
@@ -151,6 +271,10 @@ export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
     fields: [groupMembers.removedById],
     references: [profiles.id],
   }),
+  paidExpenses: many(expenses),
+  expenseSplits: many(expenseSplits),
+  settlementsSent: many(settlements, { relationName: "settlementFrom" }),
+  settlementsReceived: many(settlements, { relationName: "settlementTo" }),
 }))
 
 export const groupInvitationsRelations = relations(
@@ -172,3 +296,59 @@ export const groupInvitationsRelations = relations(
     }),
   })
 )
+
+export const expensesRelations = relations(expenses, ({ one, many }) => ({
+  group: one(groups, {
+    fields: [expenses.groupId],
+    references: [groups.id],
+  }),
+  paidByMember: one(groupMembers, {
+    fields: [expenses.paidByMemberId],
+    references: [groupMembers.id],
+  }),
+  createdBy: one(profiles, {
+    fields: [expenses.createdById],
+    references: [profiles.id],
+  }),
+  deletedBy: one(profiles, {
+    fields: [expenses.deletedById],
+    references: [profiles.id],
+  }),
+  splits: many(expenseSplits),
+}))
+
+export const expenseSplitsRelations = relations(expenseSplits, ({ one }) => ({
+  expense: one(expenses, {
+    fields: [expenseSplits.expenseId],
+    references: [expenses.id],
+  }),
+  member: one(groupMembers, {
+    fields: [expenseSplits.groupMemberId],
+    references: [groupMembers.id],
+  }),
+}))
+
+export const settlementsRelations = relations(settlements, ({ one }) => ({
+  group: one(groups, {
+    fields: [settlements.groupId],
+    references: [groups.id],
+  }),
+  fromMember: one(groupMembers, {
+    fields: [settlements.fromMemberId],
+    references: [groupMembers.id],
+    relationName: "settlementFrom",
+  }),
+  toMember: one(groupMembers, {
+    fields: [settlements.toMemberId],
+    references: [groupMembers.id],
+    relationName: "settlementTo",
+  }),
+  createdBy: one(profiles, {
+    fields: [settlements.createdById],
+    references: [profiles.id],
+  }),
+  deletedBy: one(profiles, {
+    fields: [settlements.deletedById],
+    references: [profiles.id],
+  }),
+}))

@@ -1,7 +1,20 @@
 import { notFound } from "next/navigation"
 import { format } from "date-fns"
-import { InboxIcon, UsersIcon } from "lucide-react"
+import {
+  ArrowDownLeftIcon,
+  ArrowUpRightIcon,
+  InboxIcon,
+  ReceiptTextIcon,
+  ScaleIcon,
+  UsersIcon,
+} from "lucide-react"
 import { AppShell } from "@/components/app/app-shell"
+import {
+  CreateExpenseDialog,
+  DeleteSettlementButton,
+  ExpenseActions,
+  RecordSettlementDialog,
+} from "@/components/app/expense-forms"
 import { GroupAvatar } from "@/components/app/group-avatar"
 import {
   InviteMemberDialog,
@@ -13,14 +26,8 @@ import { RoleBadge } from "@/components/app/role-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -34,7 +41,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  canMutateLedgerRecord,
+  categoryLabel,
+  dateInputValue,
+  formatMoney,
+  getGroupExpenseData,
+} from "@/lib/expenses"
 import { getGroupDetail, getPendingInvitationsForCurrentUser } from "@/lib/groups"
+
+type GroupExpenseData = NonNullable<
+  Awaited<ReturnType<typeof getGroupExpenseData>>
+>
 
 export default async function GroupDetailPage({
   params,
@@ -42,12 +61,13 @@ export default async function GroupDetailPage({
   params: Promise<{ groupId: string }>
 }) {
   const { groupId } = await params
-  const [detail, pendingForUser] = await Promise.all([
+  const [detail, expenseData, pendingForUser] = await Promise.all([
     getGroupDetail(groupId),
+    getGroupExpenseData(groupId),
     getPendingInvitationsForCurrentUser(),
   ])
 
-  if (!detail) {
+  if (!detail || !expenseData) {
     notFound()
   }
 
@@ -56,6 +76,20 @@ export default async function GroupDetailPage({
     detail.currentMembership.role === "admin"
   const isOwner = detail.currentMembership.role === "owner"
   const canArchive = isOwner && detail.activeMemberCount === 1
+  const activeMemberOptions = expenseData.activeMembers.map((member) => ({
+    id: member.id,
+    username: member.user.username,
+    email: member.user.email,
+  }))
+  const allMemberOptions = expenseData.members.map((member) => ({
+    id: member.id,
+    username: member.user.username,
+    email: member.user.email,
+  }))
+  const currentBalance =
+    expenseData.balances.find(
+      (row) => row.member.id === detail.currentMembership.id
+    )?.netCents ?? 0
 
   return (
     <AppShell user={detail.currentUser} pendingInvites={pendingForUser.length}>
@@ -79,6 +113,10 @@ export default async function GroupDetailPage({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <RoleBadge role={detail.currentMembership.role} />
+            <CreateExpenseDialog
+              groupId={detail.group.id}
+              members={activeMemberOptions}
+            />
             {canManage ? <InviteMemberDialog groupId={detail.group.id} /> : null}
             <LeaveGroupButton
               groupId={detail.group.id}
@@ -89,161 +127,208 @@ export default async function GroupDetailPage({
         </div>
 
         {isOwner && !canArchive ? (
-          <Card className="rounded-2xl border border-zinc-200/80 bg-white">
-            <CardHeader>
-              <CardTitle>Ownership required</CardTitle>
-              <CardDescription>
-                Transfer ownership before leaving this group.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+            <h2 className="font-heading text-base font-semibold text-zinc-900">
+              Ownership required
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Transfer ownership before leaving this group.
+            </p>
+          </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <SummaryCard label="Members" value={detail.activeMemberCount} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <SummaryCard
-            label="Pending invites"
-            value={detail.pendingInvitations.length}
-          />
-          <SummaryCard
-            label="Owner"
-            value={`@${detail.group.owner.username}`}
+            label="Your balance"
+            value={formatMoney(currentBalance, detail.group.currencyCode)}
+            tone={currentBalance}
             text
           />
+          <SummaryCard
+            label="Expenses"
+            value={expenseData.activeExpenses.length}
+          />
+          <SummaryCard
+            label="Open transfers"
+            value={expenseData.settlementSuggestions.length}
+          />
+          <SummaryCard label="Members" value={detail.activeMemberCount} />
         </div>
 
-        <Card className="rounded-2xl border border-zinc-200/80 bg-white">
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle>Members</CardTitle>
-                <CardDescription>
-                  Roles control who can manage the group.
-                </CardDescription>
-              </div>
-              <Badge variant="secondary">
-                <UsersIcon data-icon="inline-start" />
-                {detail.activeMemberCount}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {detail.members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell>
-                      <div className="flex min-w-52 items-center gap-3">
-                        <Avatar className="size-8">
-                          <AvatarFallback>
-                            {member.user.username.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <div className="truncate font-medium text-zinc-900">
-                            @{member.user.username}
-                          </div>
-                          <div className="truncate text-xs text-zinc-500">
-                            {member.user.email}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <RoleBadge role={member.role} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          member.status === "active" ? "secondary" : "outline"
-                        }
-                      >
-                        {member.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-zinc-500">
-                      {format(member.joinedAt, "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <MemberActions
-                        groupId={detail.group.id}
-                        memberId={member.id}
-                        memberRole={member.role}
-                        memberName={`@${member.user.username}`}
-                        currentUserRole={detail.currentMembership.role}
-                        isCurrentUser={member.userId === detail.currentUser.id}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="overview" className="flex flex-col gap-4">
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="balances">Balances</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
+          </TabsList>
 
-        <Card className="rounded-2xl border border-zinc-200/80 bg-white">
-          <CardHeader>
-            <CardTitle>Pending invitations</CardTitle>
-            <CardDescription>
-              Links expire after seven days and can be revoked by managers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {detail.pendingInvitations.length ? (
-              <div className="flex flex-col gap-3">
-                {detail.pendingInvitations.map((invitation) => (
-                  <div
-                    key={invitation.id}
-                    className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-zinc-900">
-                        {invitation.email}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        Invited by @{invitation.invitedBy.username} · expires{" "}
-                        {format(invitation.expiresAt, "MMM d")}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RoleBadge role={invitation.role} />
-                      {canManage ? (
-                        <RevokeInvitationButton
-                          groupId={detail.group.id}
-                          invitationId={invitation.id}
-                        />
-                      ) : null}
-                    </div>
+          <TabsContent value="overview" className="flex flex-col gap-4">
+            <SectionHeader
+              label="Overview"
+              title="Group activity"
+              description="Recent expenses and the shortest path to settle up."
+            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                      Recent expenses
+                    </p>
+                    <h2 className="font-heading text-lg font-semibold text-zinc-900">
+                      Latest costs
+                    </h2>
                   </div>
-                ))}
+                  <ReceiptTextIcon className="size-5 text-zinc-400" />
+                </div>
+                {expenseData.activeExpenses.length ? (
+                  <div className="flex flex-col divide-y divide-zinc-100">
+                    {expenseData.activeExpenses.slice(0, 5).map((expense) => (
+                      <div
+                        key={expense.id}
+                        className="flex items-center justify-between gap-3 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-zinc-900">
+                            {expense.title}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            Paid by @{expense.paidByMember.user.username} ·{" "}
+                            {format(expense.expenseDate, "MMM d")}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold text-zinc-900">
+                          {formatMoney(
+                            expense.amountCents,
+                            expense.currencyCode
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-500">
+                    No expenses have been added yet.
+                  </p>
+                )}
               </div>
-            ) : (
-              <Empty className="border border-dashed border-zinc-200/80">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <InboxIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>No pending invitations</EmptyTitle>
-                  <EmptyDescription>
-                    Invite links you create will appear here until accepted or
-                    revoked.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            )}
-          </CardContent>
-        </Card>
+              <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                      Settlement plan
+                    </p>
+                    <h2 className="font-heading text-lg font-semibold text-zinc-900">
+                      Fewer payments
+                    </h2>
+                  </div>
+                  <ScaleIcon className="size-5 text-zinc-400" />
+                </div>
+                <SettlementSuggestions
+                  groupId={detail.group.id}
+                  suggestions={expenseData.settlementSuggestions}
+                  members={activeMemberOptions}
+                  currencyCode={detail.group.currencyCode}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="expenses" className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <SectionHeader
+                label="Expenses"
+                title="Logged costs"
+                description="Every expense updates balances immediately."
+              />
+              <CreateExpenseDialog
+                groupId={detail.group.id}
+                members={activeMemberOptions}
+              />
+            </div>
+            <ExpensesTable
+              groupId={detail.group.id}
+              expenses={expenseData.activeExpenses}
+              members={allMemberOptions}
+              activeMembers={activeMemberOptions}
+              currentUserId={detail.currentUser.id}
+              currentRole={detail.currentMembership.role}
+            />
+          </TabsContent>
+
+          <TabsContent value="balances" className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <SectionHeader
+                label="Balances"
+                title="Who owes what"
+                description="Balances are derived from active expenses and settlements."
+              />
+              <RecordSettlementDialog
+                groupId={detail.group.id}
+                members={activeMemberOptions}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <BalancesList
+                balances={expenseData.balances}
+                currencyCode={detail.group.currencyCode}
+              />
+              <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+                <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                  Suggestions
+                </p>
+                <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
+                  Settle up
+                </h2>
+                <SettlementSuggestions
+                  groupId={detail.group.id}
+                  suggestions={expenseData.settlementSuggestions}
+                  members={activeMemberOptions}
+                  currencyCode={detail.group.currencyCode}
+                />
+              </div>
+            </div>
+            <SettlementHistory
+              groupId={detail.group.id}
+              settlements={expenseData.activeSettlements}
+              currentUserId={detail.currentUser.id}
+              currentRole={detail.currentMembership.role}
+            />
+          </TabsContent>
+
+          <TabsContent value="members" className="flex flex-col gap-4">
+            <MembersSection
+              detail={detail}
+              canManage={canManage}
+              activeMemberCount={detail.activeMemberCount}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppShell>
+  )
+}
+
+function SectionHeader({
+  label,
+  title,
+  description,
+}: {
+  label: string
+  title: string
+  description: string
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+        {label}
+      </p>
+      <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
+        {title}
+      </h2>
+      <p className="mt-0.5 text-sm text-zinc-500">{description}</p>
+    </div>
   )
 }
 
@@ -251,10 +336,12 @@ function SummaryCard({
   label,
   value,
   text,
+  tone,
 }: {
   label: string
   value: number | string
   text?: boolean
+  tone?: number
 }) {
   return (
     <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
@@ -264,12 +351,482 @@ function SummaryCard({
       <p
         className={
           text
-            ? "font-heading text-xl font-bold tracking-tight text-zinc-900 truncate"
+            ? "truncate font-heading text-xl font-bold tracking-tight text-zinc-900"
             : "font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900"
         }
       >
         {value}
       </p>
+      {typeof tone === "number" ? (
+        <p className="mt-1 text-xs text-zinc-500">
+          {tone > 0 ? "You are owed" : tone < 0 ? "You owe" : "Settled"}
+        </p>
+      ) : null}
     </div>
+  )
+}
+
+function amountInputValue(cents: number) {
+  const dollars = Math.floor(cents / 100)
+  const remainder = String(cents % 100).padStart(2, "0")
+  return `${dollars}.${remainder}`
+}
+
+function percentageInputValue(basisPoints: number | null) {
+  if (basisPoints === null) return ""
+  const whole = Math.floor(basisPoints / 100)
+  const fraction = basisPoints % 100
+  return fraction ? `${whole}.${String(fraction).padStart(2, "0")}` : `${whole}`
+}
+
+function ExpensesTable({
+  groupId,
+  expenses,
+  members,
+  activeMembers,
+  currentUserId,
+  currentRole,
+}: {
+  groupId: string
+  expenses: GroupExpenseData["activeExpenses"]
+  members: { id: string; username: string; email: string }[]
+  activeMembers: { id: string; username: string; email: string }[]
+  currentUserId: string
+  currentRole: "owner" | "admin" | "member"
+}) {
+  if (!expenses.length) {
+    return (
+      <Empty className="rounded-2xl border border-dashed border-zinc-200/80 bg-white">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ReceiptTextIcon />
+          </EmptyMedia>
+          <EmptyTitle>No expenses yet</EmptyTitle>
+          <EmptyDescription>
+            Add the first shared cost to start the ledger.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <CreateExpenseDialog groupId={groupId} members={activeMembers} />
+        </EmptyContent>
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Expense</TableHead>
+            <TableHead>Paid by</TableHead>
+            <TableHead>Split</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="w-10" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {expenses.map((expense) => {
+            const editableExpense = {
+              id: expense.id,
+              title: expense.title,
+              description: expense.description,
+              amount: amountInputValue(expense.amountCents),
+              category: expense.category,
+              paidByMemberId: expense.paidByMemberId,
+              expenseDate: dateInputValue(expense.expenseDate),
+              splitMethod: expense.splitMethod,
+              splits: expense.splits.map((split) => ({
+                memberId: split.groupMemberId,
+                checked: true,
+                value:
+                  expense.splitMethod === "percentage"
+                    ? percentageInputValue(split.percentageBasisPoints)
+                    : amountInputValue(split.owedCents),
+              })),
+            }
+            const canMutate = canMutateLedgerRecord({
+              currentUserId,
+              currentRole,
+              createdById: expense.createdById,
+            })
+            return (
+              <TableRow key={expense.id}>
+                <TableCell>
+                  <div className="min-w-56">
+                    <div className="font-medium text-zinc-900">
+                      {expense.title}
+                    </div>
+                    <div className="mt-0.5 text-xs text-zinc-500">
+                      {categoryLabel(expense.category)} ·{" "}
+                      {format(expense.expenseDate, "MMM d, yyyy")}
+                    </div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-400">
+                      {expense.splits
+                        .map(
+                          (split) =>
+                            `@${split.member.user.username} ${formatMoney(
+                              split.owedCents,
+                              expense.currencyCode
+                            )}`
+                        )
+                        .join(" · ")}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm text-zinc-900">
+                    @{expense.paidByMember.user.username}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    by @{expense.createdBy.username}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{expense.splitMethod}</Badge>
+                </TableCell>
+                <TableCell className="text-right font-semibold text-zinc-900">
+                  {formatMoney(expense.amountCents, expense.currencyCode)}
+                </TableCell>
+                <TableCell>
+                  <ExpenseActions
+                    groupId={groupId}
+                    expenseId={expense.id}
+                    canMutate={canMutate}
+                    members={members}
+                    expense={editableExpense}
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function BalancesList({
+  balances,
+  currencyCode,
+}: {
+  balances: GroupExpenseData["balances"]
+  currencyCode: string
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+      <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+        Ledger
+      </p>
+      <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
+        Member balances
+      </h2>
+      <div className="flex flex-col divide-y divide-zinc-100">
+        {balances.map((row) => (
+          <div
+            key={row.member.id}
+            className="flex items-center justify-between gap-3 py-3"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar className="size-8">
+                <AvatarFallback>
+                  {row.member.user.username.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-zinc-900">
+                  @{row.member.user.username}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  Paid {formatMoney(row.paidCents, currencyCode)} · owes{" "}
+                  {formatMoney(row.owedCents, currencyCode)}
+                </div>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-sm font-semibold text-zinc-900">
+                {formatMoney(row.netCents, currencyCode)}
+              </div>
+              <div className="flex items-center justify-end gap-1 text-xs text-zinc-500">
+                {row.netCents > 0 ? (
+                  <ArrowUpRightIcon className="size-3 text-zinc-400" />
+                ) : row.netCents < 0 ? (
+                  <ArrowDownLeftIcon className="size-3 text-zinc-400" />
+                ) : null}
+                {row.netCents > 0
+                  ? "is owed"
+                  : row.netCents < 0
+                    ? "owes"
+                    : "settled"}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SettlementSuggestions({
+  groupId,
+  suggestions,
+  members,
+  currencyCode,
+}: {
+  groupId: string
+  suggestions: GroupExpenseData["settlementSuggestions"]
+  members: { id: string; username: string; email: string }[]
+  currencyCode: string
+}) {
+  if (!suggestions.length) {
+    return <p className="text-sm text-zinc-500">Everyone is settled up.</p>
+  }
+
+  const memberMap = new Map(members.map((member) => [member.id, member]))
+  return (
+    <div className="flex flex-col gap-3">
+      {suggestions.map((suggestion) => {
+        const from = memberMap.get(suggestion.fromMemberId)
+        const to = memberMap.get(suggestion.toMemberId)
+        if (!from || !to) return null
+        return (
+          <div
+            key={`${suggestion.fromMemberId}-${suggestion.toMemberId}-${suggestion.amountCents}`}
+            className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0 text-sm">
+              <span className="font-medium text-zinc-900">@{from.username}</span>
+              <span className="text-zinc-500"> pays </span>
+              <span className="font-medium text-zinc-900">@{to.username}</span>
+              <div className="mt-0.5 text-xs text-zinc-500">
+                {formatMoney(suggestion.amountCents, currencyCode)}
+              </div>
+            </div>
+            <RecordSettlementDialog
+              groupId={groupId}
+              members={members}
+              defaultFromMemberId={suggestion.fromMemberId}
+              defaultToMemberId={suggestion.toMemberId}
+              defaultAmount={amountInputValue(suggestion.amountCents)}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SettlementHistory({
+  groupId,
+  settlements,
+  currentUserId,
+  currentRole,
+}: {
+  groupId: string
+  settlements: GroupExpenseData["activeSettlements"]
+  currentUserId: string
+  currentRole: "owner" | "admin" | "member"
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+      <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+        History
+      </p>
+      <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
+        Recorded settlements
+      </h2>
+      {settlements.length ? (
+        <div className="flex flex-col divide-y divide-zinc-100">
+          {settlements.map((settlement) => {
+            const canMutate = canMutateLedgerRecord({
+              currentUserId,
+              currentRole,
+              createdById: settlement.createdById,
+            })
+            return (
+              <div
+                key={settlement.id}
+                className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm text-zinc-900">
+                    <span className="font-medium">
+                      @{settlement.fromMember.user.username}
+                    </span>{" "}
+                    paid{" "}
+                    <span className="font-medium">
+                      @{settlement.toMember.user.username}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    {format(settlement.settledDate, "MMM d, yyyy")} · recorded
+                    by @{settlement.createdBy.username}
+                    {settlement.note ? ` · ${settlement.note}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 sm:justify-end">
+                  <span className="text-sm font-semibold text-zinc-900">
+                    {formatMoney(settlement.amountCents, settlement.currencyCode)}
+                  </span>
+                  <DeleteSettlementButton
+                    groupId={groupId}
+                    settlementId={settlement.id}
+                    canMutate={canMutate}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="text-sm text-zinc-500">No settlements recorded yet.</p>
+      )}
+    </div>
+  )
+}
+
+function MembersSection({
+  detail,
+  canManage,
+  activeMemberCount,
+}: {
+  detail: NonNullable<Awaited<ReturnType<typeof getGroupDetail>>>
+  canManage: boolean
+  activeMemberCount: number
+}) {
+  return (
+    <>
+      <SectionHeader
+        label="Members"
+        title="People and invitations"
+        description="Roles control who can manage members and group data."
+      />
+      <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-heading text-lg font-semibold text-zinc-900">
+              Members
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Roles control who can manage the group.
+            </p>
+          </div>
+          <Badge variant="secondary">
+            <UsersIcon data-icon="inline-start" />
+            {activeMemberCount}
+          </Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Member</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {detail.members.map((member) => (
+              <TableRow key={member.id}>
+                <TableCell>
+                  <div className="flex min-w-52 items-center gap-3">
+                    <Avatar className="size-8">
+                      <AvatarFallback>
+                        {member.user.username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-zinc-900">
+                        @{member.user.username}
+                      </div>
+                      <div className="truncate text-xs text-zinc-500">
+                        {member.user.email}
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <RoleBadge role={member.role} />
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={member.status === "active" ? "secondary" : "outline"}
+                  >
+                    {member.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-zinc-500">
+                  {format(member.joinedAt, "MMM d, yyyy")}
+                </TableCell>
+                <TableCell>
+                  <MemberActions
+                    groupId={detail.group.id}
+                    memberId={member.id}
+                    memberRole={member.role}
+                    memberName={`@${member.user.username}`}
+                    currentUserRole={detail.currentMembership.role}
+                    isCurrentUser={member.userId === detail.currentUser.id}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+        <h2 className="font-heading text-lg font-semibold text-zinc-900">
+          Pending invitations
+        </h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          Links expire after seven days and can be revoked by managers.
+        </p>
+        <div className="mt-4">
+          {detail.pendingInvitations.length ? (
+            <div className="flex flex-col gap-3">
+              {detail.pendingInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-zinc-900">
+                      {invitation.email}
+                    </div>
+                    <div className="text-xs text-zinc-500">
+                      Invited by @{invitation.invitedBy.username} · expires{" "}
+                      {format(invitation.expiresAt, "MMM d")}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={invitation.role} />
+                    {canManage ? (
+                      <RevokeInvitationButton
+                        groupId={detail.group.id}
+                        invitationId={invitation.id}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Empty className="border border-dashed border-zinc-200/80">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <InboxIcon />
+                </EmptyMedia>
+                <EmptyTitle>No pending invitations</EmptyTitle>
+                <EmptyDescription>
+                  Invite links you create will appear here until accepted or
+                  revoked.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
