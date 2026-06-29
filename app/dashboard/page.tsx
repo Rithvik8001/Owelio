@@ -38,7 +38,7 @@ export default async function DashboardPage() {
         {/* Page header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+            <p className="mb-1 text-xs font-medium text-zinc-400">
               Overview
             </p>
             <h1 className="font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
 
         {/* Pending invitations banner */}
         {data.pendingInvites.length ? (
-          <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
                 <BellIcon className="size-4" />
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
         {expenseData?.recentExpenses.length ? (
           <section className="flex flex-col gap-4">
             <div>
-              <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+              <p className="mb-1 text-xs font-medium text-zinc-400">
                 Expenses
               </p>
               <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
                 Latest costs across your groups.
               </p>
             </div>
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+            <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
               <div className="flex flex-col divide-y divide-zinc-100">
                 {expenseData.recentExpenses.map((expense) => (
                   <Link
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                     className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
                         <ReceiptTextIcon className="size-4 text-zinc-500" />
                       </div>
                       <div className="min-w-0">
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
         <section className="flex flex-col gap-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+              <p className="mb-1 text-xs font-medium text-zinc-400">
                 Groups
               </p>
               <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
@@ -191,7 +191,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <Empty className="rounded-2xl border border-dashed border-zinc-200/80 bg-white">
+            <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <UsersIcon />
@@ -226,17 +226,17 @@ function MetricCard({
   iconClass: string
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-6">
+    <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+          <p className="mb-1.5 text-xs font-medium text-zinc-400">
             {title}
           </p>
           <p className="font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
             {value}
           </p>
         </div>
-        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", iconClass)}>
+        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-2xl", iconClass)}>
           <Icon className="size-5" />
         </div>
       </div>
@@ -263,7 +263,7 @@ function GroupCard({
   currencyCode: string
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-6 transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.08)]">
+    <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white p-6 transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.08)]">
       <div className="flex items-start gap-3">
         <GroupAvatar name={name} />
         <div className="min-w-0 flex-1">
@@ -285,8 +285,8 @@ function GroupCard({
       ) : (
         <p className="text-sm text-zinc-400">No description yet.</p>
       )}
-      <div className="rounded-xl bg-zinc-50 p-3">
-        <p className="text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+      <div className="rounded-2xl bg-zinc-50 p-3">
+        <p className="text-xs font-medium text-zinc-400">
           Your balance
         </p>
         <p className="mt-1 text-sm font-semibold text-zinc-900">

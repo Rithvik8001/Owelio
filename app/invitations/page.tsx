@@ -36,7 +36,7 @@ export default async function InvitationsPage() {
     <AppShell user={user} pendingInvites={invitations.length}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <div>
-          <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+          <p className="mb-1 text-xs font-medium text-zinc-400">
             Invitations
           </p>
           <h1 className="font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
@@ -52,7 +52,7 @@ export default async function InvitationsPage() {
             {invitations.map((invitation) => (
               <Card
                 key={invitation.id}
-                className="rounded-2xl border border-zinc-200/80 bg-white"
+                className="rounded-3xl border border-zinc-200/80 bg-white"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
@@ -68,7 +68,7 @@ export default async function InvitationsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between gap-3 rounded-xl bg-zinc-50 p-3 text-sm">
+                  <div className="flex items-center justify-between gap-3 rounded-2xl bg-zinc-50 p-3 text-sm">
                     <span className="text-zinc-500">Expires</span>
                     <span className="font-medium text-zinc-900">
                       {format(invitation.expiresAt, "MMM d, yyyy")}
@@ -83,7 +83,7 @@ export default async function InvitationsPage() {
             ))}
           </div>
         ) : (
-          <Empty className="rounded-2xl border border-dashed border-zinc-200/80 bg-white">
+          <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <InboxIcon />

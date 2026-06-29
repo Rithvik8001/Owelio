@@ -222,7 +222,7 @@ export function InviteMemberDialog({ groupId }: { groupId: string }) {
         </form>
 
         {state?.inviteUrl ? (
-          <div className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50 p-3">
+          <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-3">
             <div className="text-xs font-medium text-zinc-500">Invite link</div>
             <div className="break-all text-sm text-zinc-900">
               {state.inviteUrl}
@@ -256,7 +256,7 @@ export function AcceptInvitationForm({ token }: { token: string }) {
         ) : null}
         {state?.message ? (
           <Field>
-            <div className="rounded-xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-700">
+            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-700">
               {state.message}
             </div>
           </Field>

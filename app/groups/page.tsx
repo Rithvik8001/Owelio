@@ -28,7 +28,7 @@ export default async function GroupsPage() {
         {/* Page header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+            <p className="mb-1 text-xs font-medium text-zinc-400">
               Groups
             </p>
             <h1 className="font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
@@ -43,7 +43,7 @@ export default async function GroupsPage() {
 
         {/* Pending invitations banner */}
         {data.pendingInvites.length ? (
-          <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
                 <BellIcon className="size-4" />
@@ -70,7 +70,7 @@ export default async function GroupsPage() {
             {data.groups.map(({ group, membership, memberCount }) => (
               <div
                 key={group.id}
-                className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-6 transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.08)]"
+                className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white p-6 transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.08)]"
               >
                 <div className="flex items-start gap-3">
                   <GroupAvatar name={group.name} />
@@ -100,7 +100,7 @@ export default async function GroupsPage() {
             ))}
           </div>
         ) : (
-          <Empty className="rounded-2xl border border-dashed border-zinc-200/80 bg-white">
+          <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <UsersIcon />

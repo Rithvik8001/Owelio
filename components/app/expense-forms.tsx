@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react"
+import { format } from "date-fns"
 import {
   CalendarIcon,
   MoreHorizontalIcon,
@@ -58,6 +59,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -101,6 +108,62 @@ function memberLabel(member: MemberOption) {
 
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10)
+}
+
+function parseDateString(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function formatDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
+function DatePickerInput({
+  name,
+  value,
+  onChange,
+  id,
+}: {
+  name: string
+  value: string
+  onChange: (value: string) => void
+  id?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const date = parseDateString(value)
+
+  return (
+    <>
+      <input type="hidden" name={name} value={value} />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className="w-full justify-start text-left font-normal"
+          >
+            <CalendarIcon className="mr-2 size-4 shrink-0" />
+            {format(date, "MMM d, yyyy")}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={(selected) => {
+              if (selected) onChange(formatDateString(selected))
+              setOpen(false)
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    </>
+  )
 }
 
 export function CreateExpenseDialog({
@@ -167,6 +230,9 @@ function ExpenseDialog({
   const [splitMethod, setSplitMethod] = useState<
     (typeof expenseSplitMethods)[number]
   >(expense?.splitMethod ?? "equal")
+  const [expenseDateValue, setExpenseDateValue] = useState(
+    expense?.expenseDate ?? todayInputValue()
+  )
   const [state, action, pending] = useActionState(
     mode === "edit" ? updateExpense : createExpense,
     undefined as ExpenseFormState
@@ -188,6 +254,8 @@ function ExpenseDialog({
   useEffect(() => {
     if (state?.message && mode === "create") {
       formRef.current?.reset()
+      setExpenseDateValue(todayInputValue())
+      setSplitMethod("equal")
     }
   }, [mode, state])
 
@@ -216,7 +284,7 @@ function ExpenseDialog({
             ) : null}
             {state?.message ? (
               <Field>
-                <div className="rounded-xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-700">
+                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-700">
                   {state.message}
                 </div>
               </Field>
@@ -270,12 +338,11 @@ function ExpenseDialog({
               </Field>
               <Field data-invalid={Boolean(state?.errors?.expenseDate)}>
                 <FieldLabel htmlFor={`${mode}-expense-date`}>Date</FieldLabel>
-                <Input
+                <DatePickerInput
                   id={`${mode}-expense-date`}
                   name="expenseDate"
-                  type="date"
-                  defaultValue={expense?.expenseDate ?? todayInputValue()}
-                  required
+                  value={expenseDateValue}
+                  onChange={setExpenseDateValue}
                 />
                 <FieldError>{state?.errors?.expenseDate?.[0]}</FieldError>
               </Field>
@@ -340,13 +407,13 @@ function ExpenseDialog({
 
             <Field data-invalid={Boolean(state?.errors?.participantIds || state?.errors?.splits)}>
               <FieldLabel>Participants</FieldLabel>
-              <div className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 p-3">
+              <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200/80 p-3">
                 {members.map((member) => {
                   const split = defaultSplits.find((item) => item.memberId === member.id)
                   return (
                     <label
                       key={member.id}
-                      className="flex flex-col gap-2 rounded-lg border border-zinc-100 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-2 rounded-xl border border-zinc-100 p-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <Checkbox
@@ -473,6 +540,7 @@ export function RecordSettlementDialog({
   defaultAmount?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [settledDateValue, setSettledDateValue] = useState(todayInputValue())
   const [state, action, pending] = useActionState(
     recordSettlement,
     undefined as SettlementFormState
@@ -482,6 +550,7 @@ export function RecordSettlementDialog({
   useEffect(() => {
     if (state?.message) {
       formRef.current?.reset()
+      setSettledDateValue(todayInputValue())
     }
   }, [state])
 
@@ -510,7 +579,7 @@ export function RecordSettlementDialog({
             ) : null}
             {state?.message ? (
               <Field>
-                <div className="rounded-xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-700">
+                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-700">
                   {state.message}
                 </div>
               </Field>
@@ -568,12 +637,11 @@ export function RecordSettlementDialog({
               </Field>
               <Field data-invalid={Boolean(state?.errors?.settledDate)}>
                 <FieldLabel htmlFor="settlement-date">Date</FieldLabel>
-                <Input
+                <DatePickerInput
                   id="settlement-date"
                   name="settledDate"
-                  type="date"
-                  defaultValue={todayInputValue()}
-                  required
+                  value={settledDateValue}
+                  onChange={setSettledDateValue}
                 />
                 <FieldError>{state?.errors?.settledDate?.[0]}</FieldError>
               </Field>

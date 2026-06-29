@@ -10,7 +10,7 @@ import {
   UsersIcon,
 } from "lucide-react"
 import { logout } from "@/app/actions/auth"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/app/user-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,9 +42,6 @@ const navItems = [
   { label: "Settings", href: "/settings", icon: SettingsIcon, iconClass: "text-teal-500" },
 ]
 
-function initials(username: string) {
-  return username.slice(0, 2).toUpperCase()
-}
 
 export function AppShell({
   user,
@@ -116,10 +113,8 @@ export function AppShell({
         <SidebarFooter className="border-t border-zinc-200/80 p-2">
           {/* Expanded: full user card + sign out */}
           <div className="group-data-[collapsible=icon]:hidden flex flex-col gap-1">
-            <div className="flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-white p-2">
-              <Avatar className="size-8 shrink-0">
-                <AvatarFallback>{initials(user.username)}</AvatarFallback>
-              </Avatar>
+            <div className="flex items-center gap-2 rounded-2xl border border-zinc-200/80 bg-white p-2">
+              <UserAvatar username={user.username} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-zinc-900">
                   @{user.username}
@@ -140,9 +135,7 @@ export function AppShell({
           </div>
           {/* Collapsed: just the avatar centered, fits within 48px */}
           <div className="hidden group-data-[collapsible=icon]:flex justify-center py-1">
-            <Avatar className="size-8">
-              <AvatarFallback>{initials(user.username)}</AvatarFallback>
-            </Avatar>
+            <UserAvatar username={user.username} />
           </div>
         </SidebarFooter>
       </Sidebar>

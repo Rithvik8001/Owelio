@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { format } from "date-fns"
 import {
   ArrowDownLeftIcon,
+  ArrowRightIcon,
   ArrowUpRightIcon,
   InboxIcon,
   ReceiptTextIcon,
@@ -23,7 +24,7 @@ import {
   RevokeInvitationButton,
 } from "@/components/app/group-forms"
 import { RoleBadge } from "@/components/app/role-badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/app/user-avatar"
 import { Badge } from "@/components/ui/badge"
 import {
   Empty,
@@ -94,40 +95,40 @@ export default async function GroupDetailPage({
   return (
     <AppShell user={detail.currentUser} pendingInvites={pendingForUser.length}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <GroupAvatar name={detail.group.name} size="lg" />
-            <div className="min-w-0">
-              <p className="mb-0.5 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
-                Group
-              </p>
-              <h1 className="truncate font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
-                {detail.group.name}
-              </h1>
-              {detail.group.description ? (
-                <p className="mt-1.5 max-w-2xl text-sm text-zinc-500">
-                  {detail.group.description}
-                </p>
-              ) : null}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="rounded-full border border-dashed border-zinc-300 bg-zinc-50/80 p-1.5">
+              <GroupAvatar name={detail.group.name} size="lg" />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <RoleBadge role={detail.currentMembership.role} />
+              <CreateExpenseDialog
+                groupId={detail.group.id}
+                members={activeMemberOptions}
+              />
+              {canManage ? <InviteMemberDialog groupId={detail.group.id} /> : null}
+              <LeaveGroupButton
+                groupId={detail.group.id}
+                isOwner={isOwner}
+                canArchive={canArchive}
+              />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <RoleBadge role={detail.currentMembership.role} />
-            <CreateExpenseDialog
-              groupId={detail.group.id}
-              members={activeMemberOptions}
-            />
-            {canManage ? <InviteMemberDialog groupId={detail.group.id} /> : null}
-            <LeaveGroupButton
-              groupId={detail.group.id}
-              isOwner={isOwner}
-              canArchive={canArchive}
-            />
+          <div className="min-w-0">
+            <p className="mb-0.5 text-xs font-medium text-zinc-400">Group</p>
+            <h1 className="truncate font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
+              {detail.group.name}
+            </h1>
+            {detail.group.description ? (
+              <p className="mt-1.5 max-w-2xl text-sm text-zinc-500">
+                {detail.group.description}
+              </p>
+            ) : null}
           </div>
         </div>
 
         {isOwner && !canArchive ? (
-          <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+          <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
             <h2 className="font-heading text-base font-semibold text-zinc-900">
               Ownership required
             </h2>
@@ -155,13 +156,15 @@ export default async function GroupDetailPage({
           <SummaryCard label="Members" value={detail.activeMemberCount} />
         </div>
 
-        <Tabs defaultValue="overview" className="flex flex-col gap-4">
-          <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="balances">Balances</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="flex flex-col gap-6">
+          <div className="overflow-x-auto">
+            <TabsList className="!h-auto w-fit bg-zinc-50 rounded-full border border-zinc-200/80 p-1.5 gap-1.5">
+              <TabsTrigger value="overview" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="expenses" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Expenses</TabsTrigger>
+              <TabsTrigger value="balances" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Balances</TabsTrigger>
+              <TabsTrigger value="members" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Members</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="flex flex-col gap-4">
             <SectionHeader
@@ -170,10 +173,10 @@ export default async function GroupDetailPage({
               description="Recent expenses and the shortest path to settle up."
             />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+              <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                    <p className="mb-1 text-xs font-medium text-zinc-400">
                       Recent expenses
                     </p>
                     <h2 className="font-heading text-lg font-semibold text-zinc-900">
@@ -213,10 +216,10 @@ export default async function GroupDetailPage({
                   </p>
                 )}
               </div>
-              <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+              <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+                    <p className="mb-1 text-xs font-medium text-zinc-400">
                       Settlement plan
                     </p>
                     <h2 className="font-heading text-lg font-semibold text-zinc-900">
@@ -274,8 +277,8 @@ export default async function GroupDetailPage({
                 balances={expenseData.balances}
                 currencyCode={detail.group.currencyCode}
               />
-              <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
-                <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+              <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
+                <p className="mb-1 text-xs font-medium text-zinc-400">
                   Suggestions
                 </p>
                 <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
@@ -321,7 +324,7 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+      <p className="mb-1 text-xs font-medium text-zinc-400">
         {label}
       </p>
       <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
@@ -344,22 +347,36 @@ function SummaryCard({
   tone?: number
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
-      <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+    <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
+      <p className="mb-1.5 text-xs font-medium text-zinc-400">
         {label}
       </p>
       <p
         className={
           text
-            ? "truncate font-heading text-xl font-bold tracking-tight text-zinc-900"
+            ? `truncate font-heading text-xl font-bold tracking-tight ${
+                typeof tone === "number" && tone > 0
+                  ? "text-emerald-600"
+                  : typeof tone === "number" && tone < 0
+                    ? "text-red-600"
+                    : "text-zinc-900"
+              }`
             : "font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900"
         }
       >
         {value}
       </p>
       {typeof tone === "number" ? (
-        <p className="mt-1 text-xs text-zinc-500">
-          {tone > 0 ? "You are owed" : tone < 0 ? "You owe" : "Settled"}
+        <p
+          className={`mt-1 text-xs ${
+            tone > 0
+              ? "text-emerald-600"
+              : tone < 0
+                ? "text-red-600"
+                : "text-zinc-400"
+          }`}
+        >
+          {tone > 0 ? "You are owed" : tone < 0 ? "You owe" : "Settled up"}
         </p>
       ) : null}
     </div>
@@ -396,7 +413,7 @@ function ExpensesTable({
 }) {
   if (!expenses.length) {
     return (
-      <Empty className="rounded-2xl border border-dashed border-zinc-200/80 bg-white">
+      <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <ReceiptTextIcon />
@@ -414,7 +431,7 @@ function ExpensesTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white">
+    <div className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white">
       <Table>
         <TableHeader>
           <TableRow>
@@ -478,9 +495,11 @@ function ExpensesTable({
                   <div className="text-sm text-zinc-900">
                     @{expense.paidByMember.user.username}
                   </div>
-                  <div className="text-xs text-zinc-500">
-                    by @{expense.createdBy.username}
-                  </div>
+                  {expense.paidByMember.user.username !== expense.createdBy.username ? (
+                    <div className="text-xs text-zinc-500">
+                      by @{expense.createdBy.username}
+                    </div>
+                  ) : null}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{expense.splitMethod}</Badge>
@@ -514,8 +533,8 @@ function BalancesList({
   currencyCode: string
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
-      <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+    <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
+      <p className="mb-1 text-xs font-medium text-zinc-400">
         Ledger
       </p>
       <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
@@ -528,11 +547,7 @@ function BalancesList({
             className="flex items-center justify-between gap-3 py-3"
           >
             <div className="flex min-w-0 items-center gap-3">
-              <Avatar className="size-8">
-                <AvatarFallback>
-                  {row.member.user.username.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar username={row.member.user.username} />
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-zinc-900">
                   @{row.member.user.username}
@@ -544,14 +559,30 @@ function BalancesList({
               </div>
             </div>
             <div className="shrink-0 text-right">
-              <div className="text-sm font-semibold text-zinc-900">
+              <div
+                className={`text-sm font-semibold ${
+                  row.netCents > 0
+                    ? "text-emerald-600"
+                    : row.netCents < 0
+                      ? "text-red-600"
+                      : "text-zinc-400"
+                }`}
+              >
                 {formatMoney(row.netCents, currencyCode)}
               </div>
-              <div className="flex items-center justify-end gap-1 text-xs text-zinc-500">
+              <div
+                className={`flex items-center justify-end gap-1 text-xs ${
+                  row.netCents > 0
+                    ? "text-emerald-600"
+                    : row.netCents < 0
+                      ? "text-red-600"
+                      : "text-zinc-400"
+                }`}
+              >
                 {row.netCents > 0 ? (
-                  <ArrowUpRightIcon className="size-3 text-zinc-400" />
+                  <ArrowUpRightIcon className="size-3" />
                 ) : row.netCents < 0 ? (
-                  <ArrowDownLeftIcon className="size-3 text-zinc-400" />
+                  <ArrowDownLeftIcon className="size-3" />
                 ) : null}
                 {row.netCents > 0
                   ? "is owed"
@@ -592,13 +623,15 @@ function SettlementSuggestions({
         return (
           <div
             key={`${suggestion.fromMemberId}-${suggestion.toMemberId}-${suggestion.amountCents}`}
-            className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-2xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="min-w-0 text-sm">
-              <span className="font-medium text-zinc-900">@{from.username}</span>
-              <span className="text-zinc-500"> pays </span>
-              <span className="font-medium text-zinc-900">@{to.username}</span>
-              <div className="mt-0.5 text-xs text-zinc-500">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-sm">
+                <span className="font-medium text-zinc-900">@{from.username}</span>
+                <ArrowRightIcon className="size-3 shrink-0 text-zinc-400" />
+                <span className="font-medium text-zinc-900">@{to.username}</span>
+              </div>
+              <div className="mt-0.5 text-sm font-semibold text-zinc-900">
                 {formatMoney(suggestion.amountCents, currencyCode)}
               </div>
             </div>
@@ -628,8 +661,8 @@ function SettlementHistory({
   currentRole: "owner" | "admin" | "member"
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
-      <p className="mb-1 text-[10px] font-bold tracking-[0.1em] text-zinc-400 uppercase">
+    <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
+      <p className="mb-1 text-xs font-medium text-zinc-400">
         History
       </p>
       <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
@@ -701,7 +734,7 @@ function MembersSection({
         title="People and invitations"
         description="Roles control who can manage members and group data."
       />
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+      <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="font-heading text-lg font-semibold text-zinc-900">
@@ -731,11 +764,7 @@ function MembersSection({
               <TableRow key={member.id}>
                 <TableCell>
                   <div className="flex min-w-52 items-center gap-3">
-                    <Avatar className="size-8">
-                      <AvatarFallback>
-                        {member.user.username.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar username={member.user.username} />
                     <div className="min-w-0">
                       <div className="truncate font-medium text-zinc-900">
                         @{member.user.username}
@@ -775,7 +804,7 @@ function MembersSection({
         </Table>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-6">
+      <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
         <h2 className="font-heading text-lg font-semibold text-zinc-900">
           Pending invitations
         </h2>
@@ -788,7 +817,7 @@ function MembersSection({
               {detail.pendingInvitations.map((invitation) => (
                 <div
                   key={invitation.id}
-                  className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-zinc-200/80 p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium text-zinc-900">

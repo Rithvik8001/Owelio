@@ -1,12 +1,12 @@
 const AVATAR_GRADIENTS: [string, string][] = [
-  ["#FF6B6B", "#FF3B30"],
-  ["#FFB340", "#FF9500"],
-  ["#3DD68C", "#34C759"],
-  ["#40C8F4", "#32ADE6"],
-  ["#409CFF", "#007AFF"],
   ["#7D7AFF", "#5856D6"],
-  ["#DA8FFF", "#AF52DE"],
+  ["#409CFF", "#007AFF"],
   ["#FF6584", "#FF2D55"],
+  ["#3DD68C", "#34C759"],
+  ["#FFB340", "#FF9500"],
+  ["#40C8F4", "#32ADE6"],
+  ["#DA8FFF", "#AF52DE"],
+  ["#FF6B6B", "#FF3B30"],
 ]
 
 function hashName(name: string): number {
@@ -17,32 +17,29 @@ function hashName(name: string): number {
   return Math.abs(hash)
 }
 
-export function groupColor(name: string): string {
-  const [light, dark] = AVATAR_GRADIENTS[hashName(name) % AVATAR_GRADIENTS.length]
-  return `linear-gradient(135deg, ${light} 0%, ${dark} 100%)`
-}
-
-export function GroupAvatar({
-  name,
+export function UserAvatar({
+  username,
   size = "md",
 }: {
-  name: string
+  username: string
   size?: "sm" | "md" | "lg"
 }) {
-  const gradient = groupColor(name)
+  const [light, dark] = AVATAR_GRADIENTS[hashName(username) % AVATAR_GRADIENTS.length]
+  const gradient = `linear-gradient(135deg, ${light} 0%, ${dark} 100%)`
+
   const sizeClass =
     size === "sm"
-      ? "size-7 text-[11px]"
+      ? "size-6 text-[9px]"
       : size === "lg"
-        ? "size-12 text-base"
-        : "size-9 text-sm"
+        ? "size-10 text-xs"
+        : "size-8 text-[10px]"
 
   return (
     <div
       className={`flex shrink-0 items-center justify-center rounded-full font-bold tracking-wide text-white shadow-sm ring-2 ring-white/20 ${sizeClass}`}
       style={{ background: gradient }}
     >
-      {name.slice(0, 1).toUpperCase()}
+      {username.slice(0, 2).toUpperCase()}
     </div>
   )
 }
