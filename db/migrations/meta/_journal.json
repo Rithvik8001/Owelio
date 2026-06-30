@@ -15,6 +15,13 @@
       "when": 1782748274160,
       "tag": "0001_expenses_v1",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782832232883,
+      "tag": "0002_watery_white_queen",
+      "breakpoints": true
     }
   ]
 }

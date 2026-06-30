@@ -1,5 +1,6 @@
 import Link from "next/link"
 import {
+  AlertTriangleIcon,
   BellIcon,
   CircleDollarSignIcon,
   ReceiptTextIcon,
@@ -19,13 +20,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Button } from "@/components/ui/button"
+import { getDashboardBudgetData } from "@/lib/budgets"
 import { formatMoney, getDashboardExpenseData } from "@/lib/expenses"
 import { getDashboardData } from "@/lib/groups"
 
 export default async function DashboardPage() {
-  const [data, expenseData] = await Promise.all([
+  const [data, expenseData, budgetData] = await Promise.all([
     getDashboardData(),
     getDashboardExpenseData(),
+    getDashboardBudgetData(),
   ])
 
   if (!data) {
@@ -38,9 +41,7 @@ export default async function DashboardPage() {
         {/* Page header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="mb-1 text-xs font-medium text-zinc-400">
-              Overview
-            </p>
+            <p className="mb-1 text-xs font-medium text-zinc-400">Overview</p>
             <h1 className="font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
               Welcome back, @{data.user.username}
             </h1>
@@ -105,12 +106,33 @@ export default async function DashboardPage() {
           </div>
         ) : null}
 
+        {budgetData?.overBudgetCount ? (
+          <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500">
+                <AlertTriangleIcon className="size-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">
+                  {budgetData.overBudgetCount} budget
+                  {budgetData.overBudgetCount === 1 ? "" : "s"} over limit
+                </p>
+                <p className="text-sm text-zinc-500">
+                  Review group budgets and recent spending before adding more
+                  costs.
+                </p>
+              </div>
+            </div>
+            <Button asChild className="shrink-0 bg-zinc-900 hover:bg-zinc-700">
+              <Link href="/groups">Review groups</Link>
+            </Button>
+          </div>
+        ) : null}
+
         {expenseData?.recentExpenses.length ? (
           <section className="flex flex-col gap-4">
             <div>
-              <p className="mb-1 text-xs font-medium text-zinc-400">
-                Expenses
-              </p>
+              <p className="mb-1 text-xs font-medium text-zinc-400">Expenses</p>
               <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
                 Recent expenses
               </h2>
@@ -154,9 +176,7 @@ export default async function DashboardPage() {
         <section className="flex flex-col gap-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="mb-1 text-xs font-medium text-zinc-400">
-                Groups
-              </p>
+              <p className="mb-1 text-xs font-medium text-zinc-400">Groups</p>
               <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
                 Recent groups
               </h2>
@@ -173,22 +193,29 @@ export default async function DashboardPage() {
 
           {data.groups.length ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {data.groups.slice(0, 6).map(({ group, membership, memberCount }) => (
-                <GroupCard
-                  key={group.id}
-                  id={group.id}
-                  name={group.name}
-                  description={group.description ?? null}
-                  memberCount={memberCount}
-                  role={membership.role}
-                  netCents={
-                    expenseData?.groupSummaries.find(
-                      (summary) => summary.group.id === group.id
-                    )?.netCents ?? 0
-                  }
-                  currencyCode={group.currencyCode}
-                />
-              ))}
+              {data.groups
+                .slice(0, 6)
+                .map(({ group, membership, memberCount }) => (
+                  <GroupCard
+                    key={group.id}
+                    id={group.id}
+                    name={group.name}
+                    description={group.description ?? null}
+                    memberCount={memberCount}
+                    role={membership.role}
+                    netCents={
+                      expenseData?.groupSummaries.find(
+                        (summary) => summary.group.id === group.id
+                      )?.netCents ?? 0
+                    }
+                    budget={
+                      budgetData?.groupBudgetSummaries.find(
+                        (summary) => summary.group.id === group.id
+                      )?.overallBudget ?? null
+                    }
+                    currencyCode={group.currencyCode}
+                  />
+                ))}
             </div>
           ) : (
             <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
@@ -229,14 +256,17 @@ function MetricCard({
     <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="mb-1.5 text-xs font-medium text-zinc-400">
-            {title}
-          </p>
+          <p className="mb-1.5 text-xs font-medium text-zinc-400">{title}</p>
           <p className="font-heading text-3xl font-bold tracking-[-0.03em] text-zinc-900">
             {value}
           </p>
         </div>
-        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-2xl", iconClass)}>
+        <div
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-2xl",
+            iconClass
+          )}
+        >
           <Icon className="size-5" />
         </div>
       </div>
@@ -252,6 +282,7 @@ function GroupCard({
   memberCount,
   role,
   netCents,
+  budget,
   currencyCode,
 }: {
   id: string
@@ -260,15 +291,29 @@ function GroupCard({
   memberCount: number
   role: "owner" | "admin" | "member"
   netCents: number
+  budget: {
+    spentCents: number
+    usedPercent: number
+    progressPercent: number
+    tone: "normal" | "warning" | "over"
+    budget: { amountCents: number; currencyCode: string }
+  } | null
   currencyCode: string
 }) {
+  const progressClass =
+    budget?.tone === "over"
+      ? "bg-red-500"
+      : budget?.tone === "warning"
+        ? "bg-amber-500"
+        : "bg-zinc-900"
+
   return (
     <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white p-6 transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.08)]">
       <div className="flex items-start gap-3">
         <GroupAvatar name={name} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="font-heading text-[0.95rem] font-semibold leading-snug text-zinc-900 truncate">
+            <p className="truncate font-heading text-[0.95rem] leading-snug font-semibold text-zinc-900">
               {name}
             </p>
             <RoleBadge role={role} />
@@ -286,13 +331,31 @@ function GroupCard({
         <p className="text-sm text-zinc-400">No description yet.</p>
       )}
       <div className="rounded-2xl bg-zinc-50 p-3">
-        <p className="text-xs font-medium text-zinc-400">
-          Your balance
-        </p>
+        <p className="text-xs font-medium text-zinc-400">Your balance</p>
         <p className="mt-1 text-sm font-semibold text-zinc-900">
           {formatMoney(netCents, currencyCode)}
         </p>
       </div>
+      {budget ? (
+        <div className="rounded-2xl bg-zinc-50 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-medium text-zinc-400">Budget</p>
+            <p className="text-xs font-medium text-zinc-500">
+              {budget.usedPercent}% used
+            </p>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200">
+            <div
+              className={`h-full rounded-full ${progressClass}`}
+              style={{ width: `${budget.progressPercent}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-zinc-500">
+            {formatMoney(budget.spentCents, budget.budget.currencyCode)} of{" "}
+            {formatMoney(budget.budget.amountCents, budget.budget.currencyCode)}
+          </p>
+        </div>
+      ) : null}
       <Button asChild variant="outline" className="w-full">
         <Link href={`/groups/${id}`}>Open group</Link>
       </Button>

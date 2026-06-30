@@ -167,6 +167,41 @@ export const settlements = pgTable(
   ]
 )
 
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    category: expenseCategoryEnum("category"),
+    amountCents: integer("amount_cents").notNull(),
+    currencyCode: text("currency_code").notNull(),
+    startsAt: timestamp("starts_at"),
+    endsAt: timestamp("ends_at"),
+    createdById: uuid("created_by_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    archivedAt: timestamp("archived_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("budgets_group_id_idx").on(table.groupId),
+    index("budgets_group_archived_idx").on(table.groupId, table.archivedAt),
+    index("budgets_group_category_idx").on(table.groupId, table.category),
+    uniqueIndex("budgets_active_overall_unique")
+      .on(table.groupId)
+      .where(sql`${table.archivedAt} is null and ${table.category} is null`),
+    uniqueIndex("budgets_active_category_unique")
+      .on(table.groupId, table.category)
+      .where(
+        sql`${table.archivedAt} is null and ${table.category} is not null`
+      ),
+  ]
+)
+
 export const groupMembers = pgTable(
   "group_members",
   {
@@ -189,7 +224,10 @@ export const groupMembers = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("group_members_group_user_unique").on(table.groupId, table.userId),
+    uniqueIndex("group_members_group_user_unique").on(
+      table.groupId,
+      table.userId
+    ),
     uniqueIndex("group_members_one_active_owner_idx")
       .on(table.groupId)
       .where(sql`${table.role} = 'owner' and ${table.status} = 'active'`),
@@ -239,6 +277,7 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   acceptedInvitations: many(groupInvitations, { relationName: "acceptedBy" }),
   createdExpenses: many(expenses),
   createdSettlements: many(settlements),
+  createdBudgets: many(budgets),
 }))
 
 export const groupsRelations = relations(groups, ({ one, many }) => ({
@@ -256,26 +295,30 @@ export const groupsRelations = relations(groups, ({ one, many }) => ({
   invitations: many(groupInvitations),
   expenses: many(expenses),
   settlements: many(settlements),
+  budgets: many(budgets),
 }))
 
-export const groupMembersRelations = relations(groupMembers, ({ one, many }) => ({
-  group: one(groups, {
-    fields: [groupMembers.groupId],
-    references: [groups.id],
-  }),
-  user: one(profiles, {
-    fields: [groupMembers.userId],
-    references: [profiles.id],
-  }),
-  removedBy: one(profiles, {
-    fields: [groupMembers.removedById],
-    references: [profiles.id],
-  }),
-  paidExpenses: many(expenses),
-  expenseSplits: many(expenseSplits),
-  settlementsSent: many(settlements, { relationName: "settlementFrom" }),
-  settlementsReceived: many(settlements, { relationName: "settlementTo" }),
-}))
+export const groupMembersRelations = relations(
+  groupMembers,
+  ({ one, many }) => ({
+    group: one(groups, {
+      fields: [groupMembers.groupId],
+      references: [groups.id],
+    }),
+    user: one(profiles, {
+      fields: [groupMembers.userId],
+      references: [profiles.id],
+    }),
+    removedBy: one(profiles, {
+      fields: [groupMembers.removedById],
+      references: [profiles.id],
+    }),
+    paidExpenses: many(expenses),
+    expenseSplits: many(expenseSplits),
+    settlementsSent: many(settlements, { relationName: "settlementFrom" }),
+    settlementsReceived: many(settlements, { relationName: "settlementTo" }),
+  })
+)
 
 export const groupInvitationsRelations = relations(
   groupInvitations,
@@ -349,6 +392,17 @@ export const settlementsRelations = relations(settlements, ({ one }) => ({
   }),
   deletedBy: one(profiles, {
     fields: [settlements.deletedById],
+    references: [profiles.id],
+  }),
+}))
+
+export const budgetsRelations = relations(budgets, ({ one }) => ({
+  group: one(groups, {
+    fields: [budgets.groupId],
+    references: [groups.id],
+  }),
+  createdBy: one(profiles, {
+    fields: [budgets.createdById],
     references: [profiles.id],
   }),
 }))

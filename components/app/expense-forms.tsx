@@ -1,7 +1,6 @@
 "use client"
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react"
-import { format } from "date-fns"
 import {
   CalendarIcon,
   MoreHorizontalIcon,
@@ -59,14 +58,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DatePickerInput,
+  todayInputValue,
+} from "@/components/app/date-picker-input"
 import {
   expenseCategories,
   expenseSplitMethods,
@@ -104,66 +101,6 @@ function titleCase(value: string) {
 
 function memberLabel(member: MemberOption) {
   return `@${member.username}`
-}
-
-function todayInputValue() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function parseDateString(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number)
-  return new Date(y, m - 1, d)
-}
-
-function formatDateString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
-
-function DatePickerInput({
-  name,
-  value,
-  onChange,
-  id,
-}: {
-  name: string
-  value: string
-  onChange: (value: string) => void
-  id?: string
-}) {
-  const [open, setOpen] = useState(false)
-  const date = parseDateString(value)
-
-  return (
-    <>
-      <input type="hidden" name={name} value={value} />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            id={id}
-            type="button"
-            variant="outline"
-            className="w-full justify-start text-left font-normal"
-          >
-            <CalendarIcon className="mr-2 size-4 shrink-0" />
-            {format(date, "MMM d, yyyy")}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={(selected) => {
-              if (selected) onChange(formatDateString(selected))
-              setOpen(false)
-            }}
-          />
-        </PopoverContent>
-      </Popover>
-    </>
-  )
 }
 
 export function CreateExpenseDialog({
@@ -256,8 +193,10 @@ function ExpenseDialog({
   useEffect(() => {
     if (state?.message && mode === "create") {
       formRef.current?.reset()
-      setExpenseDateValue(todayInputValue())
-      setSplitMethod("equal")
+      queueMicrotask(() => {
+        setExpenseDateValue(todayInputValue())
+        setSplitMethod("equal")
+      })
     }
   }, [mode, state])
 
@@ -566,7 +505,7 @@ export function RecordSettlementDialog({
   useEffect(() => {
     if (state?.message) {
       formRef.current?.reset()
-      setSettledDateValue(todayInputValue())
+      queueMicrotask(() => setSettledDateValue(todayInputValue()))
     }
   }, [state])
 

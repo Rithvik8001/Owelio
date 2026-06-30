@@ -140,7 +140,9 @@ export function buildSplitRows({
   splitMethod: ExpenseSplitMethod
   splits: SplitInput[]
 }) {
-  const selected = [...splits].sort((a, b) => a.memberId.localeCompare(b.memberId))
+  const selected = [...splits].sort((a, b) =>
+    a.memberId.localeCompare(b.memberId)
+  )
   if (!selected.length) {
     throw new Error("Choose at least one participant.")
   }
@@ -194,7 +196,9 @@ export function calculateBalances({
 }: {
   members: LedgerMember[]
   activeExpenses: Array<
-    typeof expenses.$inferSelect & { splits: (typeof expenseSplits.$inferSelect)[] }
+    typeof expenses.$inferSelect & {
+      splits: (typeof expenseSplits.$inferSelect)[]
+    }
   >
   activeSettlements: (typeof settlements.$inferSelect)[]
 }) {
@@ -378,7 +382,10 @@ export async function getDashboardExpenseData() {
       with: { user: true },
     }),
     db.query.expenses.findMany({
-      where: and(inArray(expenses.groupId, groupIds), isNull(expenses.deletedAt)),
+      where: and(
+        inArray(expenses.groupId, groupIds),
+        isNull(expenses.deletedAt)
+      ),
       with: {
         group: true,
         paidByMember: { with: { user: true } },

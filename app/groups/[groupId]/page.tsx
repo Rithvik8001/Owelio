@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { format } from "date-fns"
 import {
+  AlertTriangleIcon,
   ArrowDownLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
@@ -8,8 +9,14 @@ import {
   ReceiptTextIcon,
   ScaleIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react"
 import { AppShell } from "@/components/app/app-shell"
+import {
+  BudgetActions,
+  CreateBudgetDialog,
+  type EditableBudget,
+} from "@/components/app/budget-forms"
 import {
   CreateExpenseDialog,
   DeleteSettlementButton,
@@ -50,7 +57,11 @@ import {
   formatMoney,
   getGroupExpenseData,
 } from "@/lib/expenses"
-import { getGroupDetail, getPendingInvitationsForCurrentUser } from "@/lib/groups"
+import { getGroupBudgetData, type BudgetProgress } from "@/lib/budgets"
+import {
+  getGroupDetail,
+  getPendingInvitationsForCurrentUser,
+} from "@/lib/groups"
 
 type GroupExpenseData = NonNullable<
   Awaited<ReturnType<typeof getGroupExpenseData>>
@@ -62,13 +73,14 @@ export default async function GroupDetailPage({
   params: Promise<{ groupId: string }>
 }) {
   const { groupId } = await params
-  const [detail, expenseData, pendingForUser] = await Promise.all([
+  const [detail, expenseData, budgetData, pendingForUser] = await Promise.all([
     getGroupDetail(groupId),
     getGroupExpenseData(groupId),
+    getGroupBudgetData(groupId),
     getPendingInvitationsForCurrentUser(),
   ])
 
-  if (!detail || !expenseData) {
+  if (!detail || !expenseData || !budgetData) {
     notFound()
   }
 
@@ -106,7 +118,9 @@ export default async function GroupDetailPage({
                 groupId={detail.group.id}
                 members={activeMemberOptions}
               />
-              {canManage ? <InviteMemberDialog groupId={detail.group.id} /> : null}
+              {canManage ? (
+                <InviteMemberDialog groupId={detail.group.id} />
+              ) : null}
               <LeaveGroupButton
                 groupId={detail.group.id}
                 isOwner={isOwner}
@@ -158,11 +172,37 @@ export default async function GroupDetailPage({
 
         <Tabs defaultValue="overview" className="flex flex-col gap-6">
           <div className="overflow-x-auto">
-            <TabsList className="!h-auto w-fit bg-zinc-50 rounded-full border border-zinc-200/80 p-1.5 gap-1.5">
-              <TabsTrigger value="overview" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Overview</TabsTrigger>
-              <TabsTrigger value="expenses" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Expenses</TabsTrigger>
-              <TabsTrigger value="balances" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Balances</TabsTrigger>
-              <TabsTrigger value="members" className="rounded-full !h-auto px-5 py-2 text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 data-active:!bg-zinc-900 data-active:!text-white data-active:!border-solid data-active:!border-transparent data-active:!shadow-none whitespace-nowrap">Members</TabsTrigger>
+            <TabsList className="!h-auto w-fit gap-1.5 rounded-full border border-zinc-200/80 bg-zinc-50 p-1.5">
+              <TabsTrigger
+                value="overview"
+                className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="expenses"
+                className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
+              >
+                Expenses
+              </TabsTrigger>
+              <TabsTrigger
+                value="balances"
+                className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
+              >
+                Balances
+              </TabsTrigger>
+              <TabsTrigger
+                value="budgets"
+                className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
+              >
+                Budgets
+              </TabsTrigger>
+              <TabsTrigger
+                value="members"
+                className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
+              >
+                Members
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -300,6 +340,24 @@ export default async function GroupDetailPage({
             />
           </TabsContent>
 
+          <TabsContent value="budgets" className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <SectionHeader
+                label="Budgets"
+                title="Spending plans"
+                description="Optional limits for trips, events, and shared goals."
+              />
+              {canManage ? (
+                <CreateBudgetDialog groupId={detail.group.id} />
+              ) : null}
+            </div>
+            <BudgetsSection
+              groupId={detail.group.id}
+              budgets={budgetData.budgetProgress}
+              canManage={canManage}
+            />
+          </TabsContent>
+
           <TabsContent value="members" className="flex flex-col gap-4">
             <MembersSection
               detail={detail}
@@ -324,9 +382,7 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="mb-1 text-xs font-medium text-zinc-400">
-        {label}
-      </p>
+      <p className="mb-1 text-xs font-medium text-zinc-400">{label}</p>
       <h2 className="font-heading text-xl font-semibold tracking-tight text-zinc-900">
         {title}
       </h2>
@@ -348,9 +404,7 @@ function SummaryCard({
 }) {
   return (
     <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
-      <p className="mb-1.5 text-xs font-medium text-zinc-400">
-        {label}
-      </p>
+      <p className="mb-1.5 text-xs font-medium text-zinc-400">{label}</p>
       <p
         className={
           text
@@ -394,6 +448,165 @@ function percentageInputValue(basisPoints: number | null) {
   const whole = Math.floor(basisPoints / 100)
   const fraction = basisPoints % 100
   return fraction ? `${whole}.${String(fraction).padStart(2, "0")}` : `${whole}`
+}
+
+function dateValue(date: Date | null) {
+  return date ? dateInputValue(date) : ""
+}
+
+function budgetDateRange(row: BudgetProgress) {
+  if (!row.budget.startsAt && !row.budget.endsAt) {
+    return "All time"
+  }
+  if (row.budget.startsAt && row.budget.endsAt) {
+    return `${format(row.budget.startsAt, "MMM d, yyyy")} - ${format(
+      row.budget.endsAt,
+      "MMM d, yyyy"
+    )}`
+  }
+  if (row.budget.startsAt) {
+    return `From ${format(row.budget.startsAt, "MMM d, yyyy")}`
+  }
+  return `Until ${format(row.budget.endsAt!, "MMM d, yyyy")}`
+}
+
+function budgetScopeLabel(row: BudgetProgress) {
+  return row.budget.category ? categoryLabel(row.budget.category) : "Overall"
+}
+
+function editableBudget(row: BudgetProgress): EditableBudget {
+  return {
+    id: row.budget.id,
+    name: row.budget.name,
+    scope: row.budget.category ? "category" : "overall",
+    category: row.budget.category ?? "",
+    amount: amountInputValue(row.budget.amountCents),
+    startsAt: dateValue(row.budget.startsAt),
+    endsAt: dateValue(row.budget.endsAt),
+  }
+}
+
+function BudgetsSection({
+  groupId,
+  budgets,
+  canManage,
+}: {
+  groupId: string
+  budgets: BudgetProgress[]
+  canManage: boolean
+}) {
+  if (!budgets.length) {
+    return (
+      <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <WalletIcon />
+          </EmptyMedia>
+          <EmptyTitle>No budgets yet</EmptyTitle>
+          <EmptyDescription>
+            Add an optional budget for a trip, event, or shared spending plan.
+          </EmptyDescription>
+        </EmptyHeader>
+        {canManage ? (
+          <EmptyContent>
+            <CreateBudgetDialog groupId={groupId} />
+          </EmptyContent>
+        ) : null}
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {budgets.map((row) => (
+        <BudgetCard
+          key={row.budget.id}
+          groupId={groupId}
+          row={row}
+          canManage={canManage}
+        />
+      ))}
+    </div>
+  )
+}
+
+function BudgetCard({
+  groupId,
+  row,
+  canManage,
+}: {
+  groupId: string
+  row: BudgetProgress
+  canManage: boolean
+}) {
+  const remainingLabel =
+    row.remainingCents >= 0
+      ? `${formatMoney(row.remainingCents, row.budget.currencyCode)} left`
+      : `${formatMoney(Math.abs(row.remainingCents), row.budget.currencyCode)} over`
+  const progressClass =
+    row.tone === "over"
+      ? "bg-red-500"
+      : row.tone === "warning"
+        ? "bg-amber-500"
+        : "bg-zinc-900"
+  const textClass =
+    row.tone === "over"
+      ? "text-red-600"
+      : row.tone === "warning"
+        ? "text-amber-600"
+        : "text-zinc-500"
+
+  return (
+    <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="mb-1 text-xs font-medium text-zinc-400">
+            {budgetScopeLabel(row)}
+          </p>
+          <h2 className="truncate font-heading text-lg font-semibold text-zinc-900">
+            {row.budget.name}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">{budgetDateRange(row)}</p>
+        </div>
+        {canManage ? (
+          <BudgetActions groupId={groupId} budget={editableBudget(row)} />
+        ) : null}
+      </div>
+
+      <div className="mt-5 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-zinc-400">Spent</p>
+          <p className="mt-1 font-heading text-2xl font-bold tracking-tight text-zinc-900">
+            {formatMoney(row.spentCents, row.budget.currencyCode)}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-medium text-zinc-400">Budget</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-900">
+            {formatMoney(row.budget.amountCents, row.budget.currencyCode)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
+        <div
+          className={`h-full rounded-full ${progressClass}`}
+          style={{ width: `${row.progressPercent}%` }}
+        />
+      </div>
+      <div className="mt-3 flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <span className={textClass}>
+          {row.usedPercent}% used · {remainingLabel}
+        </span>
+        {row.tone !== "normal" ? (
+          <span className={`flex items-center gap-1 ${textClass}`}>
+            <AlertTriangleIcon className="size-4" />
+            {row.tone === "over" ? "Over budget" : "Close to limit"}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 function ExpensesTable({
@@ -495,7 +708,8 @@ function ExpensesTable({
                   <div className="text-sm text-zinc-900">
                     @{expense.paidByMember.user.username}
                   </div>
-                  {expense.paidByMember.user.username !== expense.createdBy.username ? (
+                  {expense.paidByMember.user.username !==
+                  expense.createdBy.username ? (
                     <div className="text-xs text-zinc-500">
                       by @{expense.createdBy.username}
                     </div>
@@ -534,9 +748,7 @@ function BalancesList({
 }) {
   return (
     <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
-      <p className="mb-1 text-xs font-medium text-zinc-400">
-        Ledger
-      </p>
+      <p className="mb-1 text-xs font-medium text-zinc-400">Ledger</p>
       <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
         Member balances
       </h2>
@@ -627,9 +839,13 @@ function SettlementSuggestions({
           >
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-sm">
-                <span className="font-medium text-zinc-900">@{from.username}</span>
+                <span className="font-medium text-zinc-900">
+                  @{from.username}
+                </span>
                 <ArrowRightIcon className="size-3 shrink-0 text-zinc-400" />
-                <span className="font-medium text-zinc-900">@{to.username}</span>
+                <span className="font-medium text-zinc-900">
+                  @{to.username}
+                </span>
               </div>
               <div className="mt-0.5 text-sm font-semibold text-zinc-900">
                 {formatMoney(suggestion.amountCents, currencyCode)}
@@ -662,9 +878,7 @@ function SettlementHistory({
 }) {
   return (
     <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
-      <p className="mb-1 text-xs font-medium text-zinc-400">
-        History
-      </p>
+      <p className="mb-1 text-xs font-medium text-zinc-400">History</p>
       <h2 className="mb-4 font-heading text-lg font-semibold text-zinc-900">
         Recorded settlements
       </h2>
@@ -699,7 +913,10 @@ function SettlementHistory({
                 </div>
                 <div className="flex items-center gap-2 sm:justify-end">
                   <span className="text-sm font-semibold text-zinc-900">
-                    {formatMoney(settlement.amountCents, settlement.currencyCode)}
+                    {formatMoney(
+                      settlement.amountCents,
+                      settlement.currencyCode
+                    )}
                   </span>
                   <DeleteSettlementButton
                     groupId={groupId}
@@ -780,7 +997,9 @@ function MembersSection({
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={member.status === "active" ? "secondary" : "outline"}
+                    variant={
+                      member.status === "active" ? "secondary" : "outline"
+                    }
                   >
                     {member.status}
                   </Badge>
