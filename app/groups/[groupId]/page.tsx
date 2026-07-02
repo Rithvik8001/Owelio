@@ -7,6 +7,7 @@ import {
   ArrowUpRightIcon,
   InboxIcon,
   ReceiptTextIcon,
+  RepeatIcon,
   ScaleIcon,
   UsersIcon,
   WalletIcon,
@@ -23,6 +24,12 @@ import {
   ExpenseActions,
   RecordSettlementDialog,
 } from "@/components/app/expense-forms"
+import {
+  CreateRecurringBillDialog,
+  PostRecurringBillForm,
+  RecurringBillActions,
+  type EditableRecurringBill,
+} from "@/components/app/recurring-bill-forms"
 import { GroupAvatar } from "@/components/app/group-avatar"
 import {
   InviteMemberDialog,
@@ -59,12 +66,20 @@ import {
 } from "@/lib/expenses"
 import { getGroupBudgetData, type BudgetProgress } from "@/lib/budgets"
 import {
+  frequencyLabel,
+  getGroupRecurringBillData,
+  isRecurringBillDue,
+} from "@/lib/recurring-bills"
+import {
   getGroupDetail,
   getPendingInvitationsForCurrentUser,
 } from "@/lib/groups"
 
 type GroupExpenseData = NonNullable<
   Awaited<ReturnType<typeof getGroupExpenseData>>
+>
+type GroupRecurringBillData = NonNullable<
+  Awaited<ReturnType<typeof getGroupRecurringBillData>>
 >
 
 export default async function GroupDetailPage({
@@ -73,14 +88,16 @@ export default async function GroupDetailPage({
   params: Promise<{ groupId: string }>
 }) {
   const { groupId } = await params
-  const [detail, expenseData, budgetData, pendingForUser] = await Promise.all([
-    getGroupDetail(groupId),
-    getGroupExpenseData(groupId),
-    getGroupBudgetData(groupId),
-    getPendingInvitationsForCurrentUser(),
-  ])
+  const [detail, expenseData, budgetData, recurringData, pendingForUser] =
+    await Promise.all([
+      getGroupDetail(groupId),
+      getGroupExpenseData(groupId),
+      getGroupBudgetData(groupId),
+      getGroupRecurringBillData(groupId),
+      getPendingInvitationsForCurrentUser(),
+    ])
 
-  if (!detail || !expenseData || !budgetData) {
+  if (!detail || !expenseData || !budgetData || !recurringData) {
     notFound()
   }
 
@@ -167,7 +184,10 @@ export default async function GroupDetailPage({
             label="Open transfers"
             value={expenseData.settlementSuggestions.length}
           />
-          <SummaryCard label="Members" value={detail.activeMemberCount} />
+          <SummaryCard
+            label="Due recurring"
+            value={recurringData.dueBills.length}
+          />
         </div>
 
         <Tabs defaultValue="overview" className="flex flex-col gap-6">
@@ -196,6 +216,12 @@ export default async function GroupDetailPage({
                 className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
               >
                 Budgets
+              </TabsTrigger>
+              <TabsTrigger
+                value="recurring"
+                className="!h-auto rounded-full border border-dashed border-zinc-300 px-5 py-2 text-sm font-medium whitespace-nowrap text-zinc-500 data-active:!border-solid data-active:!border-transparent data-active:!bg-zinc-900 data-active:!text-white data-active:!shadow-none"
+              >
+                Recurring
               </TabsTrigger>
               <TabsTrigger
                 value="members"
@@ -358,6 +384,28 @@ export default async function GroupDetailPage({
             />
           </TabsContent>
 
+          <TabsContent value="recurring" className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <SectionHeader
+                label="Recurring"
+                title="Bills to review"
+                description="Templates create normal expenses only when a manager posts them."
+              />
+              {canManage ? (
+                <CreateRecurringBillDialog
+                  groupId={detail.group.id}
+                  members={activeMemberOptions}
+                />
+              ) : null}
+            </div>
+            <RecurringBillsSection
+              groupId={detail.group.id}
+              data={recurringData}
+              members={activeMemberOptions}
+              canManage={canManage}
+            />
+          </TabsContent>
+
           <TabsContent value="members" className="flex flex-col gap-4">
             <MembersSection
               detail={detail}
@@ -486,6 +534,30 @@ function editableBudget(row: BudgetProgress): EditableBudget {
   }
 }
 
+function editableRecurringBill(
+  bill: GroupRecurringBillData["recurringBills"][number]
+): EditableRecurringBill {
+  return {
+    id: bill.id,
+    title: bill.title,
+    description: bill.description,
+    amount: amountInputValue(bill.amountCents),
+    category: bill.category,
+    paidByMemberId: bill.paidByMemberId,
+    splitMethod: bill.splitMethod,
+    frequency: bill.frequency,
+    nextDueDate: dateInputValue(bill.nextDueDate),
+    splits: bill.splits.map((split) => ({
+      memberId: split.groupMemberId,
+      checked: true,
+      value:
+        bill.splitMethod === "percentage"
+          ? percentageInputValue(split.percentageBasisPoints)
+          : amountInputValue(split.owedCents),
+    })),
+  }
+}
+
 function BudgetsSection({
   groupId,
   budgets,
@@ -609,6 +681,207 @@ function BudgetCard({
   )
 }
 
+function RecurringBillsSection({
+  groupId,
+  data,
+  members,
+  canManage,
+}: {
+  groupId: string
+  data: GroupRecurringBillData
+  members: { id: string; username: string; email: string }[]
+  canManage: boolean
+}) {
+  if (!data.recurringBills.length) {
+    return (
+      <Empty className="rounded-3xl border border-dashed border-zinc-200/80 bg-white">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <RepeatIcon />
+          </EmptyMedia>
+          <EmptyTitle>No recurring bills yet</EmptyTitle>
+          <EmptyDescription>
+            Add rent, utilities, subscriptions, or other repeated group costs.
+          </EmptyDescription>
+        </EmptyHeader>
+        {canManage ? (
+          <EmptyContent>
+            <CreateRecurringBillDialog groupId={groupId} members={members} />
+          </EmptyContent>
+        ) : null}
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <RecurringBillList
+        title="Due now"
+        description="Review and post these bills into the expense ledger."
+        bills={data.dueBills}
+        groupId={groupId}
+        members={members}
+        canManage={canManage}
+        emptyText="No recurring bills are due."
+      />
+      <RecurringBillList
+        title="Upcoming"
+        description="These bills are scheduled for a future date."
+        bills={data.upcomingBills}
+        groupId={groupId}
+        members={members}
+        canManage={canManage}
+        emptyText="No upcoming recurring bills."
+      />
+      {data.pausedBills.length ? (
+        <RecurringBillList
+          title="Paused"
+          description="Paused bills stay visible but do not create due prompts."
+          bills={data.pausedBills}
+          groupId={groupId}
+          members={members}
+          canManage={canManage}
+          emptyText="No paused recurring bills."
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function RecurringBillList({
+  title,
+  description,
+  bills,
+  groupId,
+  members,
+  canManage,
+  emptyText,
+}: {
+  title: string
+  description: string
+  bills: GroupRecurringBillData["recurringBills"]
+  groupId: string
+  members: { id: string; username: string; email: string }[]
+  canManage: boolean
+  emptyText: string
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div>
+        <p className="mb-1 text-xs font-medium text-zinc-400">{title}</p>
+        <h2 className="font-heading text-lg font-semibold text-zinc-900">
+          {description}
+        </h2>
+      </div>
+      {bills.length ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {bills.map((bill) => (
+            <RecurringBillCard
+              key={bill.id}
+              groupId={groupId}
+              bill={bill}
+              members={members}
+              canManage={canManage}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-dashed border-zinc-200/80 bg-white p-6 text-sm text-zinc-500">
+          {emptyText}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function RecurringBillCard({
+  groupId,
+  bill,
+  members,
+  canManage,
+}: {
+  groupId: string
+  bill: GroupRecurringBillData["recurringBills"][number]
+  members: { id: string; username: string; email: string }[]
+  canManage: boolean
+}) {
+  const due = isRecurringBillDue(bill)
+
+  return (
+    <div className="rounded-3xl border border-zinc-200/80 bg-white p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="mb-1 text-xs font-medium text-zinc-400">
+            {frequencyLabel(bill.frequency)}
+          </p>
+          <h2 className="truncate font-heading text-lg font-semibold text-zinc-900">
+            {bill.title}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Paid by @{bill.paidByMember.user.username} ·{" "}
+            {categoryLabel(bill.category)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {bill.pausedAt ? (
+            <Badge variant="outline">Paused</Badge>
+          ) : due ? (
+            <Badge variant="secondary">Due</Badge>
+          ) : null}
+          {canManage ? (
+            <RecurringBillActions
+              groupId={groupId}
+              recurringBillId={bill.id}
+              recurringBill={editableRecurringBill(bill)}
+              members={members}
+              paused={Boolean(bill.pausedAt)}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl bg-zinc-50 p-3">
+          <p className="text-xs font-medium text-zinc-400">Amount</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-900">
+            {formatMoney(bill.amountCents, bill.currencyCode)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-zinc-50 p-3">
+          <p className="text-xs font-medium text-zinc-400">Next due</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-900">
+            {format(bill.nextDueDate, "MMM d, yyyy")}
+          </p>
+        </div>
+      </div>
+
+      {bill.description ? (
+        <p className="mt-4 text-sm leading-relaxed text-zinc-500">
+          {bill.description}
+        </p>
+      ) : null}
+
+      <div className="mt-4 flex flex-col gap-2 text-xs text-zinc-500">
+        <div>
+          Split {bill.splitMethod} across{" "}
+          {bill.splits
+            .map((split) => `@${split.member.user.username}`)
+            .join(", ")}
+        </div>
+        {bill.lastPostedAt ? (
+          <div>Last posted {format(bill.lastPostedAt, "MMM d, yyyy")}</div>
+        ) : null}
+      </div>
+
+      {canManage && !bill.pausedAt && due ? (
+        <div className="mt-5">
+          <PostRecurringBillForm groupId={groupId} recurringBillId={bill.id} />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function ExpensesTable({
   groupId,
   expenses,
@@ -716,7 +989,15 @@ function ExpensesTable({
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{expense.splitMethod}</Badge>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="secondary">{expense.splitMethod}</Badge>
+                    {expense.recurringBillId ? (
+                      <Badge variant="outline">
+                        <RepeatIcon data-icon="inline-start" />
+                        Recurring
+                      </Badge>
+                    ) : null}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-semibold text-zinc-900">
                   {formatMoney(expense.amountCents, expense.currencyCode)}

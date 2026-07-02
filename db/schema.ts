@@ -48,6 +48,11 @@ export const expenseSplitMethodEnum = pgEnum("expense_split_method", [
   "exact",
   "percentage",
 ])
+export const recurringBillFrequencyEnum = pgEnum("recurring_bill_frequency", [
+  "weekly",
+  "monthly",
+  "yearly",
+])
 
 export const groups = pgTable(
   "groups",
@@ -90,6 +95,10 @@ export const expenses = pgTable(
     createdById: uuid("created_by_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "restrict" }),
+    recurringBillId: uuid("recurring_bill_id").references(
+      () => recurringBills.id,
+      { onDelete: "set null" }
+    ),
     expenseDate: timestamp("expense_date").notNull(),
     splitMethod: expenseSplitMethodEnum("split_method").notNull(),
     deletedAt: timestamp("deleted_at"),
@@ -104,6 +113,12 @@ export const expenses = pgTable(
     index("expenses_group_deleted_idx").on(table.groupId, table.deletedAt),
     index("expenses_paid_by_member_idx").on(table.paidByMemberId),
     index("expenses_created_by_idx").on(table.createdById),
+    index("expenses_recurring_bill_idx").on(table.recurringBillId),
+    uniqueIndex("expenses_recurring_bill_date_unique")
+      .on(table.recurringBillId, table.expenseDate)
+      .where(
+        sql`${table.recurringBillId} is not null and ${table.deletedAt} is null`
+      ),
   ]
 )
 
@@ -202,6 +217,68 @@ export const budgets = pgTable(
   ]
 )
 
+export const recurringBills = pgTable(
+  "recurring_bills",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    category: expenseCategoryEnum("category").notNull().default("other"),
+    amountCents: integer("amount_cents").notNull(),
+    currencyCode: text("currency_code").notNull(),
+    paidByMemberId: uuid("paid_by_member_id")
+      .notNull()
+      .references(() => groupMembers.id, { onDelete: "restrict" }),
+    splitMethod: expenseSplitMethodEnum("split_method").notNull(),
+    frequency: recurringBillFrequencyEnum("frequency").notNull(),
+    nextDueDate: timestamp("next_due_date").notNull(),
+    lastPostedAt: timestamp("last_posted_at"),
+    createdById: uuid("created_by_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    pausedAt: timestamp("paused_at"),
+    archivedAt: timestamp("archived_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_bills_group_due_idx").on(table.groupId, table.nextDueDate),
+    index("recurring_bills_group_archived_idx").on(
+      table.groupId,
+      table.archivedAt
+    ),
+    index("recurring_bills_paid_by_member_idx").on(table.paidByMemberId),
+    index("recurring_bills_created_by_idx").on(table.createdById),
+  ]
+)
+
+export const recurringBillSplits = pgTable(
+  "recurring_bill_splits",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    recurringBillId: uuid("recurring_bill_id")
+      .notNull()
+      .references(() => recurringBills.id, { onDelete: "cascade" }),
+    groupMemberId: uuid("group_member_id")
+      .notNull()
+      .references(() => groupMembers.id, { onDelete: "restrict" }),
+    owedCents: integer("owed_cents").notNull(),
+    percentageBasisPoints: integer("percentage_basis_points"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("recurring_bill_splits_bill_member_unique").on(
+      table.recurringBillId,
+      table.groupMemberId
+    ),
+    index("recurring_bill_splits_member_idx").on(table.groupMemberId),
+  ]
+)
+
 export const groupMembers = pgTable(
   "group_members",
   {
@@ -278,6 +355,7 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   createdExpenses: many(expenses),
   createdSettlements: many(settlements),
   createdBudgets: many(budgets),
+  createdRecurringBills: many(recurringBills),
 }))
 
 export const groupsRelations = relations(groups, ({ one, many }) => ({
@@ -296,6 +374,7 @@ export const groupsRelations = relations(groups, ({ one, many }) => ({
   expenses: many(expenses),
   settlements: many(settlements),
   budgets: many(budgets),
+  recurringBills: many(recurringBills),
 }))
 
 export const groupMembersRelations = relations(
@@ -315,6 +394,8 @@ export const groupMembersRelations = relations(
     }),
     paidExpenses: many(expenses),
     expenseSplits: many(expenseSplits),
+    paidRecurringBills: many(recurringBills),
+    recurringBillSplits: many(recurringBillSplits),
     settlementsSent: many(settlements, { relationName: "settlementFrom" }),
     settlementsReceived: many(settlements, { relationName: "settlementTo" }),
   })
@@ -356,6 +437,10 @@ export const expensesRelations = relations(expenses, ({ one, many }) => ({
   deletedBy: one(profiles, {
     fields: [expenses.deletedById],
     references: [profiles.id],
+  }),
+  recurringBill: one(recurringBills, {
+    fields: [expenses.recurringBillId],
+    references: [recurringBills.id],
   }),
   splits: many(expenseSplits),
 }))
@@ -406,3 +491,37 @@ export const budgetsRelations = relations(budgets, ({ one }) => ({
     references: [profiles.id],
   }),
 }))
+
+export const recurringBillsRelations = relations(
+  recurringBills,
+  ({ one, many }) => ({
+    group: one(groups, {
+      fields: [recurringBills.groupId],
+      references: [groups.id],
+    }),
+    paidByMember: one(groupMembers, {
+      fields: [recurringBills.paidByMemberId],
+      references: [groupMembers.id],
+    }),
+    createdBy: one(profiles, {
+      fields: [recurringBills.createdById],
+      references: [profiles.id],
+    }),
+    splits: many(recurringBillSplits),
+    generatedExpenses: many(expenses),
+  })
+)
+
+export const recurringBillSplitsRelations = relations(
+  recurringBillSplits,
+  ({ one }) => ({
+    recurringBill: one(recurringBills, {
+      fields: [recurringBillSplits.recurringBillId],
+      references: [recurringBills.id],
+    }),
+    member: one(groupMembers, {
+      fields: [recurringBillSplits.groupMemberId],
+      references: [groupMembers.id],
+    }),
+  })
+)

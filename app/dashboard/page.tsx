@@ -1,8 +1,11 @@
 import Link from "next/link"
+import { format } from "date-fns"
 import {
   AlertTriangleIcon,
   BellIcon,
+  CalendarClockIcon,
   CircleDollarSignIcon,
+  RepeatIcon,
   ReceiptTextIcon,
   UsersIcon,
 } from "lucide-react"
@@ -23,12 +26,17 @@ import { Button } from "@/components/ui/button"
 import { getDashboardBudgetData } from "@/lib/budgets"
 import { formatMoney, getDashboardExpenseData } from "@/lib/expenses"
 import { getDashboardData } from "@/lib/groups"
+import {
+  frequencyLabel,
+  getDashboardRecurringBillData,
+} from "@/lib/recurring-bills"
 
 export default async function DashboardPage() {
-  const [data, expenseData, budgetData] = await Promise.all([
+  const [data, expenseData, budgetData, recurringData] = await Promise.all([
     getDashboardData(),
     getDashboardExpenseData(),
     getDashboardBudgetData(),
+    getDashboardRecurringBillData(),
   ])
 
   if (!data) {
@@ -129,6 +137,28 @@ export default async function DashboardPage() {
           </div>
         ) : null}
 
+        {recurringData?.dueCount ? (
+          <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-500">
+                <CalendarClockIcon className="size-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">
+                  {recurringData.dueCount} recurring bill
+                  {recurringData.dueCount === 1 ? "" : "s"} due
+                </p>
+                <p className="text-sm text-zinc-500">
+                  Review due bills and post them into the expense ledger.
+                </p>
+              </div>
+            </div>
+            <Button asChild className="shrink-0 bg-zinc-900 hover:bg-zinc-700">
+              <Link href="/groups">Review groups</Link>
+            </Button>
+          </div>
+        ) : null}
+
         {expenseData?.recentExpenses.length ? (
           <section className="flex flex-col gap-4">
             <div>
@@ -213,6 +243,11 @@ export default async function DashboardPage() {
                         (summary) => summary.group.id === group.id
                       )?.overallBudget ?? null
                     }
+                    recurringBill={
+                      recurringData?.groupSummaries.find(
+                        (summary) => summary.group.id === group.id
+                      )?.nextBill ?? null
+                    }
                     currencyCode={group.currencyCode}
                   />
                 ))}
@@ -283,6 +318,7 @@ function GroupCard({
   role,
   netCents,
   budget,
+  recurringBill,
   currencyCode,
 }: {
   id: string
@@ -297,6 +333,13 @@ function GroupCard({
     progressPercent: number
     tone: "normal" | "warning" | "over"
     budget: { amountCents: number; currencyCode: string }
+  } | null
+  recurringBill: {
+    title: string
+    amountCents: number
+    currencyCode: string
+    frequency: "weekly" | "monthly" | "yearly"
+    nextDueDate: Date
   } | null
   currencyCode: string
 }) {
@@ -353,6 +396,22 @@ function GroupCard({
           <p className="mt-2 text-xs text-zinc-500">
             {formatMoney(budget.spentCents, budget.budget.currencyCode)} of{" "}
             {formatMoney(budget.budget.amountCents, budget.budget.currencyCode)}
+          </p>
+        </div>
+      ) : null}
+      {recurringBill ? (
+        <div className="rounded-2xl bg-zinc-50 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-medium text-zinc-400">Next recurring</p>
+            <RepeatIcon className="size-3.5 shrink-0 text-teal-500" />
+          </div>
+          <p className="mt-1 truncate text-sm font-semibold text-zinc-900">
+            {recurringBill.title}
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">
+            {formatMoney(recurringBill.amountCents, recurringBill.currencyCode)}{" "}
+            · {frequencyLabel(recurringBill.frequency)} ·{" "}
+            {format(recurringBill.nextDueDate, "MMM d")}
           </p>
         </div>
       ) : null}
